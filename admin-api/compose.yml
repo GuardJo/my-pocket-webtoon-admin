@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:17.5'
+    environment:
+      - POSTGRES_DB=my-pocket-webtoon
+      - POSTGRES_PASSWORD=manager0
+      - POSTGRES_USER=manager
+    ports:
+      - '5432:5432'
