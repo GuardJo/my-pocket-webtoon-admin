@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: admin-api
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/my-pocket-webtoon
+    username: manager
+    password: manager0
+server:
+  port: 8080
