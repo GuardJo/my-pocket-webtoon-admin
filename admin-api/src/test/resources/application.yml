@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        default_batch_fetch_size: 1000
+  datasource:
+    url: jdbc:tc:postgresql:17.5:///testdb
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
