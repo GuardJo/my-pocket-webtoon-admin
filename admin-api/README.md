@@ -105,7 +105,7 @@ episode ||--|{ episode_image: "episode_id"
 
 user_info }o--|| admin_info: "register_admin_id"
 
-admin_info ||--|| admin_role: "role_id"
+admin_info }|--|| admin_role: "role_id"
 
 reading_history }|--|| work: "work_id"
 reading_history }|--|| user_info: "user_id"
