@@ -21,7 +21,7 @@ public class TestDataGenerator {
 
         return AdminInfoEntity.builder()
                 .id(id)
-                .password("test-password")
+                .password("{noop}test-password")
                 .name(name)
                 .activate(true)
                 .role(roleEntity)
