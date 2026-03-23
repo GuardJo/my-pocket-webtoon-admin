@@ -19,3 +19,7 @@ spring:
         default_batch_fetch_size: 1000
 server:
   port: 8080
+
+jwt:
+  secret: test-secret-key-for-jwt-provider-unit-test-1234
+  expiration-millis: 3_600_000
