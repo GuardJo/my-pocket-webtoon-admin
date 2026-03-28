@@ -1,6 +1,5 @@
 package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.config.auth.JwtProvider;
@@ -8,6 +7,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.AdminUserService;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -38,7 +38,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         return adminInfoRepository.findById(adminId)
                 .orElseThrow(() -> {
                     log.error("Not found admin_info, id = {}", adminId);
-                    return new EntityNotFoundException("Not found admin_info");
+                    return new UsernameNotFoundException("Not found adminId");
                 });
     }
 

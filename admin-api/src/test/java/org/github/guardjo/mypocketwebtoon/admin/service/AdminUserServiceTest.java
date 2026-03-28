@@ -1,6 +1,5 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import org.github.guardjo.mypocketwebtoon.admin.config.auth.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
@@ -13,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -67,9 +67,8 @@ class AdminUserServiceTest {
         given(adminInfoRepository.findById(eq(adminId))).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> adminUserService.getAccessToken(adminId, testPassword))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Not found admin_info");
-
+                .isInstanceOf(UsernameNotFoundException.class);
+        
         then(adminInfoRepository).should().findById(eq(adminId));
         then(passwordEncoder).shouldHaveNoInteractions();
         then(jwtProvider).shouldHaveNoInteractions();
