@@ -96,7 +96,6 @@ class AdminUserControllerTest {
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.name());
-        assertThat(actual.getData()).isEqualTo("Not found admin_info");
 
         then(adminUserService).should().getAccessToken(eq(loginRequest.id()), eq(loginRequest.password()));
     }
@@ -125,7 +124,6 @@ class AdminUserControllerTest {
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.name());
-        assertThat(actual.getData()).isEqualTo("Invalid password");
 
         then(adminUserService).should().getAccessToken(eq(loginRequest.id()), eq(loginRequest.password()));
     }

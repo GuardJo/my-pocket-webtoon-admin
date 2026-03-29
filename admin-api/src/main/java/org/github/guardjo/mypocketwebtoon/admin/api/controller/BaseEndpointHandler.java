@@ -41,7 +41,7 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
         return BaseResponse.<String>builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .statusCode(HttpStatus.UNAUTHORIZED.name())
-                .data(e.getMessage())
+                .data("인증 정보가 올바르지 않습니다.")
                 .build();
     }
 
