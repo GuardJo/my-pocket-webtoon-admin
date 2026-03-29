@@ -1,8 +1,8 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
-import org.github.guardjo.mypocketwebtoon.admin.config.auth.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
+import org.github.guardjo.mypocketwebtoon.admin.security.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.service.impl.AdminUserServiceImpl;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.DisplayName;
@@ -68,7 +68,7 @@ class AdminUserServiceTest {
 
         assertThatThrownBy(() -> adminUserService.getAccessToken(adminId, testPassword))
                 .isInstanceOf(UsernameNotFoundException.class);
-        
+
         then(adminInfoRepository).should().findById(eq(adminId));
         then(passwordEncoder).shouldHaveNoInteractions();
         then(jwtProvider).shouldHaveNoInteractions();

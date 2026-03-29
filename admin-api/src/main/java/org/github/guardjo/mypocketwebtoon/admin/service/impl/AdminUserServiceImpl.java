@@ -2,9 +2,9 @@ package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.github.guardjo.mypocketwebtoon.admin.config.auth.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
+import org.github.guardjo.mypocketwebtoon.admin.security.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.service.AdminUserService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
