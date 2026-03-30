@@ -1,8 +1,10 @@
 package org.github.guardjo.mypocketwebtoon.admin.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
@@ -11,6 +13,8 @@ import org.github.guardjo.mypocketwebtoon.admin.security.JwtProvider;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
@@ -21,8 +25,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebSecurity
@@ -31,6 +38,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final AdminInfoRepository adminInfoRepository;
     private final JwtProvider jwtProvider;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -47,6 +55,7 @@ public class SecurityConfig {
                 .httpBasic(HttpBasicConfigurer::disable)
                 .csrf(CsrfConfigurer::disable)
                 .formLogin(FormLoginConfigurer::disable)
+                .exceptionHandling(customizer -> customizer.authenticationEntryPoint(authenticationEntryPoint()))
                 .addFilterBefore(new JwtAuthenticationFilter(userDetailsService(), jwtProvider), UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();
@@ -62,6 +71,19 @@ public class SecurityConfig {
 
             return new AdminUserPrincipal(AdminInfo.of(adminInfoEntity));
         });
+    }
+
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authenticationException) -> {
+            BaseResponse<String> baseResponse = BaseResponse.of(HttpStatus.UNAUTHORIZED, "인증에 실패하였습니다.");
+
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+            response.getWriter().write(objectMapper.writeValueAsString(baseResponse));
+        };
     }
 
     @Bean

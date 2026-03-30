@@ -20,7 +20,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
@@ -64,7 +64,7 @@ class JwtAuthenticationFilterTest {
         assertThat(authentication.getCredentials()).isEqualTo(TEST_ADMIN_INFO.password());
         assertThat(authentication.getAuthorities())
                 .extracting("authority")
-                .containsExactly(TEST_ADMIN_INFO.roleId());
+                .containsExactly("ROLE_" + TEST_ADMIN_INFO.roleId());
 
         then(jwtProvider).should().getUserKey(eq(token));
         then(userDetailsService).should().loadUserByUsername(eq(TEST_ADMIN_INFO.id()));

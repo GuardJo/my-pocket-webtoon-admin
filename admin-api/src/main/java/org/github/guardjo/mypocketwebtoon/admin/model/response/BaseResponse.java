@@ -25,4 +25,12 @@ public class BaseResponse<T> {
                 "Successes"
         );
     }
+
+    public static <D> BaseResponse<D> of(HttpStatus httpStatus, D data) {
+        return new BaseResponse<>(
+                httpStatus.value(),
+                httpStatus.name(),
+                data
+        );
+    }
 }

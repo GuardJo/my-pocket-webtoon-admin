@@ -1,11 +1,14 @@
 package org.github.guardjo.mypocketwebtoon.admin.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final JwtProvider jwtProvider;
@@ -26,11 +30,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String accessToken = getAccessToken(request);
 
         if (StringUtils.hasText(accessToken)) {
-            String adminId = jwtProvider.getUserKey(accessToken);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(adminId);
-            Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
+            try {
+                String adminId = jwtProvider.getUserKey(accessToken);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(adminId);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (JwtException jwtException) {
+                log.error("Failed decrypt JWT token, cause = {}", jwtException.getMessage());
+                throw new BadCredentialsException(jwtException.getMessage(), jwtException);
+            }
         }
 
         filterChain.doFilter(request, response);
