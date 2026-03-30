@@ -9,5 +9,17 @@ spring:
     url: jdbc:postgresql://localhost:5432/my-pocket-webtoon
     username: manager
     password: manager0
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        default_batch_fetch_size: 1000
 server:
   port: 8080
+
+jwt:
+  secret: ${JWT_SECRET_KEY:test-secret-key-for-jwt-provider-unit-test-1234}
+  expiration-millis: 3_600_000
