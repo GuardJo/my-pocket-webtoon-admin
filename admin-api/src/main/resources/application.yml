@@ -17,6 +17,10 @@ spring:
         show_sql: true
         format_sql: true
         default_batch_fetch_size: 1000
+  servlet:
+    multipart:
+      max-file-size: 4GB
+      max-request-size: 10GB
 server:
   port: 8080
 
