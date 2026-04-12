@@ -45,7 +45,7 @@ create table thumbnail_image
 (
     id          bigint primary key   default nextval('seq_thumbnail_image'),
     file_url    text unique not null,
-    file_size   integer     not null default 0,
+    file_size   bigint      not null default 0,
     created_at  timestamp   not null default current_timestamp,
     modified_at timestamp   not null default current_timestamp
 );
