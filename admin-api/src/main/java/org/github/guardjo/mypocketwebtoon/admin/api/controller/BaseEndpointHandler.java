@@ -2,7 +2,9 @@ package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Slf4j
 public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(
-            exception = ValidationException.class
+            exception = {
+                    ValidationException.class,
+                    DataIntegrityViolationException.class
+            }
     )
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public BaseResponse<String> handleBadRequest(Exception e) {
@@ -43,6 +48,14 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
                 .statusCode(HttpStatus.UNAUTHORIZED.name())
                 .data("인증 정보가 올바르지 않습니다.")
                 .build();
+    }
+
+    @ExceptionHandler(WorkUploadException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public BaseResponse<String> handleWorkUploadException(WorkUploadException e) {
+        log.error("WorkUpload Exception : {}", e.getMessage(), e);
+
+        return BaseResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, "작품 업로드 처리 중 오류가 발생했습니다.");
     }
 
     @Override

@@ -2,6 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
@@ -10,9 +11,9 @@ import org.github.guardjo.mypocketwebtoon.admin.repository.ThumbnailImageReposit
 import org.github.guardjo.mypocketwebtoon.admin.repository.WorkRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.github.guardjo.mypocketwebtoon.admin.util.FileStorageUploader;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Objects;
 
@@ -28,27 +29,35 @@ public class WorkServiceImpl implements WorkService {
     @Transactional
     @Override
     public void uploadWork(WorkUploadRequest uploadRequest) {
-        StoredThumbnail storedThumbnail = null;
+        StoredFile storedThumbnailFile = null;
 
         try {
+            ThumbnailImageEntity thumbnailImage = null;
+            if (Objects.nonNull(uploadRequest.thumbnailFile()) && !uploadRequest.thumbnailFile().isEmpty()) {
+                storedThumbnailFile = fileStorageUploader.upload(uploadRequest.thumbnailFile(), "thumbnail");
+                thumbnailImage = saveNewThumbnailImage(storedThumbnailFile);
+            }
+
             WorkEntity workEntity = saveNewWorkInfo(
                     uploadRequest,
-                    Objects.isNull(uploadRequest.thumbnailFile()) ? null : (storedThumbnail = saveNewThumbnailImage(uploadRequest.thumbnailFile())).thumbnailImage()
+                    thumbnailImage
             );
 
             // 작품 회차별 이미지 리소스 저장
             // 작품 회차 데이터 저장
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            rollbackThumbnailFile(storedThumbnailFile);
+            throw dataIntegrityViolationException;
         } catch (RuntimeException e) {
-            rollbackThumbnailFile(storedThumbnail);
-            throw e;
+            rollbackThumbnailFile(storedThumbnailFile);
+            throw new WorkUploadException("작품 업로드 처리에 실패했습니다.", e);
         }
     }
 
     /*
     작품 썸네일 데이터 및 파일 저장
      */
-    private StoredThumbnail saveNewThumbnailImage(MultipartFile thumbnailFile) {
-        StoredFile storedFile = fileStorageUploader.upload(thumbnailFile, "thumbnail");
+    private ThumbnailImageEntity saveNewThumbnailImage(StoredFile storedFile) {
         log.debug("Uploaded thumbnailFile, originName = {}, uploadName = {}", storedFile.originalFilename(), storedFile.storedFilename());
 
         ThumbnailImageEntity thumbnailImageEntity = ThumbnailImageEntity.builder()
@@ -59,7 +68,7 @@ public class WorkServiceImpl implements WorkService {
         thumbnailImageRepository.save(thumbnailImageEntity);
         log.debug("Saved thumbnail_image, id = {}", thumbnailImageEntity.getId());
 
-        return new StoredThumbnail(storedFile, thumbnailImageEntity);
+        return thumbnailImageEntity;
     }
 
     /*
@@ -81,22 +90,16 @@ public class WorkServiceImpl implements WorkService {
         return workEntity;
     }
 
-    private void rollbackThumbnailFile(StoredThumbnail storedThumbnail) {
-        if (storedThumbnail == null) {
+    private void rollbackThumbnailFile(StoredFile storedThumbnailFile) {
+        if (storedThumbnailFile == null) {
             return;
         }
 
         try {
-            fileStorageUploader.delete(storedThumbnail.storedFile());
+            fileStorageUploader.delete(storedThumbnailFile);
         } catch (RuntimeException deleteException) {
             log.warn("Failed to rollback uploaded thumbnail file, path = {}",
-                    storedThumbnail.storedFile().absolutePath(), deleteException);
+                    storedThumbnailFile.absolutePath(), deleteException);
         }
-    }
-
-    private record StoredThumbnail(
-            StoredFile storedFile,
-            ThumbnailImageEntity thumbnailImage
-    ) {
     }
 }

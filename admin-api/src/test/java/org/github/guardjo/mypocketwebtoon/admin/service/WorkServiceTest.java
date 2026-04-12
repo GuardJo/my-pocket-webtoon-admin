@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
@@ -15,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockMultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,8 +107,9 @@ class WorkServiceTest {
                 .willThrow(new IllegalStateException("upload failed"));
 
         assertThatThrownBy(() -> workService.uploadWork(uploadRequest))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("upload failed");
+                .isInstanceOf(WorkUploadException.class)
+                .hasMessage("작품 업로드 처리에 실패했습니다.")
+                .hasCauseInstanceOf(IllegalStateException.class);
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
         then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
@@ -132,8 +135,36 @@ class WorkServiceTest {
                 .willThrow(new IllegalStateException("db save failed"));
 
         assertThatThrownBy(() -> workService.uploadWork(uploadRequest))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("db save failed");
+                .isInstanceOf(WorkUploadException.class)
+                .hasMessage("작품 업로드 처리에 실패했습니다.")
+                .hasCauseInstanceOf(IllegalStateException.class);
+
+        then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
+        then(fileStorageUploader).should().delete(eq(storedFile));
+        then(thumbnailImageRepository).should().save(any(ThumbnailImageEntity.class));
+        then(workRepository).should().save(any(WorkEntity.class));
+    }
+
+    @DisplayName("썸네일 저장 후 데이터 무결성 오류가 발생하면 파일을 삭제하고 예외를 그대로 전파한다")
+    @Test
+    void test_uploadWork_fail_when_dataIntegrityViolationOccurs() {
+        MockMultipartFile thumbnailFile = mockThumbnailFile();
+        WorkUploadRequest uploadRequest = workUploadRequest(thumbnailFile);
+        StoredFile storedFile = new StoredFile(
+                "thumbnail.png",
+                "stored-thumbnail.png",
+                "/tmp/storage/thumbnail/stored-thumbnail.png",
+                "/uploads/thumbnail/stored-thumbnail.png",
+                thumbnailFile.getSize()
+        );
+
+        given(fileStorageUploader.upload(eq(thumbnailFile), eq("thumbnail"))).willReturn(storedFile);
+        given(workRepository.save(any(WorkEntity.class)))
+                .willThrow(new DataIntegrityViolationException("duplicated title"));
+
+        assertThatThrownBy(() -> workService.uploadWork(uploadRequest))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("duplicated title");
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
         then(fileStorageUploader).should().delete(eq(storedFile));
