@@ -27,3 +27,9 @@ server:
 jwt:
   secret: ${JWT_SECRET_KEY:test-secret-key-for-jwt-provider-unit-test-1234}
   expiration-millis: 3_600_000
+
+storage:
+  local:
+    upload-path: "./storage"
+    url-prefix: "/uploads"
+    public-base-url: ""
