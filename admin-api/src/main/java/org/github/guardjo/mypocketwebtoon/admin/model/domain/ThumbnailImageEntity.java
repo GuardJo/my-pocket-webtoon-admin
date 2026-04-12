@@ -17,5 +17,5 @@ public class ThumbnailImageEntity extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false, unique = true)
     private String fileUrl;
 
-    private int fileSize;
+    private long fileSize;
 }
