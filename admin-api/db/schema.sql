@@ -83,3 +83,55 @@ comment on column work.thumbnail_id is '썸네일 이미지 식별키';
 comment on column work.visibility is '노출 여부';
 comment on column work.created_at is '생성일시';
 comment on column work.modified_at is '수정일시';
+
+--- 작품 회차
+create sequence seq_episode start with 1 increment by 1 cache 50;
+
+create table episode
+(
+    id           bigint primary key default nextval('seq_episode'),
+    work_id      bigint references work,
+    episode_no   integer   not null,
+    thumbnail_id bigint references thumbnail_image,
+    like_count   integer   not null default 0,
+    view_count   integer   not null default 0,
+    created_at   timestamp not null default current_timestamp,
+    modified_at  timestamp not null default current_timestamp
+);
+
+create unique index uk_episode_work_id_episode_no on episode (work_id, episode_no);
+create index idx_episode_work_id on episode (work_id);
+
+comment on table episode is '작품 회차';
+comment on column episode.id is '작품 회차 식별키';
+comment on column episode.work_id is '작품 식별키';
+comment on column episode.episode_no is '작품 회차 번호 (작품 식별키와 함께 uk)';
+comment on column episode.thumbnail_id is '썸네일 이미지 식별키';
+comment on column episode.like_count is '회차 좋아요 수';
+comment on column episode.view_count is '회차 조회 수';
+comment on column episode.created_at is '생성일시';
+comment on column episode.modified_at is '수정일시';
+
+--- 작품 회차별 이미지
+create sequence seq_episode_image start with 1 increment by 1 cache 50;
+
+create table episode_image
+(
+    id          bigint primary key default nextval('seq_episode_image'),
+    episode_id  bigint references episode,
+    sort_order  integer   not null,
+    file_url    text      not null unique,
+    file_size   bigint    not null default 0,
+    created_at  timestamp not null default current_timestamp,
+    modified_at timestamp not null default current_timestamp
+);
+
+create unique index uk_episode_image_episode_id_sort_order on episode_image (episode_id, sort_order);
+
+comment on table episode_image is '작품 회차별 이미지';
+comment on column episode_image.episode_id is '작품 회차 식별키';
+comment on column episode_image.sort_order is '회차 내 이미지 정렬 순서 (회차 식별키와 함께 uk)';
+comment on column episode_image.file_url is '이미지 파일 url';
+comment on column episode_image.file_size is '이미지 파일 크기';
+comment on column episode_image.created_at is '생성일시';
+comment on column episode_image.modified_at is '수정일시';
