@@ -25,6 +25,7 @@ public class WorkEntity extends BaseEntity {
     private String description;
 
     @Column(length = 10, nullable = false)
+    @Builder.Default
     private String serialState = "COMPLETED";
 
     @OneToOne

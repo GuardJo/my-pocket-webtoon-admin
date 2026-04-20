@@ -8,10 +8,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -55,6 +57,42 @@ public class LocalStorageUploader implements FileStorageUploader {
     }
 
     @Override
+    public StoredFile upload(InputStream inputStream, String originalFilename, String directory) {
+        validateInputStream(inputStream);
+
+        Path rootPath = Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
+        String normalizedDirectory = normalizeDirectory(directory);
+        Path targetDirectory = rootPath.resolve(normalizedDirectory).normalize();
+
+        if (!targetDirectory.startsWith(rootPath)) {
+            throw new IllegalArgumentException("업로드 디렉터리 경로가 올바르지 않습니다.");
+        }
+
+        String sanitizedFilename = sanitizeFilename(originalFilename);
+        Path targetFile = targetDirectory.resolve(sanitizedFilename).normalize();
+
+        if (!targetFile.startsWith(targetDirectory)) {
+            throw new IllegalArgumentException("업로드 파일 경로가 올바르지 않습니다.");
+        }
+
+        try {
+            Files.createDirectories(targetDirectory);
+            Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+            long fileSize = Files.size(targetFile);
+
+            return new StoredFile(
+                    sanitizedFilename,
+                    sanitizedFilename,
+                    targetFile.toString(),
+                    buildPublicUrl(normalizedDirectory, sanitizedFilename),
+                    fileSize
+            );
+        } catch (IOException e) {
+            throw new UncheckedIOException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
+        }
+    }
+
+    @Override
     public void delete(StoredFile file) {
         if (file == null || !StringUtils.hasText(file.absolutePath())) {
             return;
@@ -74,6 +112,12 @@ public class LocalStorageUploader implements FileStorageUploader {
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("저장할 파일이 비어 있습니다.");
+        }
+    }
+
+    private void validateInputStream(InputStream inputStream) {
+        if (inputStream == null) {
+            throw new IllegalArgumentException("저장할 파일 스트림이 비어 있습니다.");
         }
     }
 
@@ -111,6 +155,22 @@ public class LocalStorageUploader implements FileStorageUploader {
             return uniqueName;
         }
         return uniqueName + "." + extension;
+    }
+
+    /*
+    저장 파일명 검증
+     */
+    private String sanitizeFilename(String originalFilename) {
+        String cleanedFilename = StringUtils.cleanPath(Objects.requireNonNull(originalFilename)).trim();
+
+        if (!StringUtils.hasText(cleanedFilename)) {
+            throw new IllegalArgumentException("업로드 파일명이 비어 있습니다.");
+        }
+        if (cleanedFilename.contains("..") || cleanedFilename.contains("/") || cleanedFilename.contains("\\")) {
+            throw new IllegalArgumentException("업로드 파일명이 올바르지 않습니다.");
+        }
+
+        return cleanedFilename;
     }
 
     /*
