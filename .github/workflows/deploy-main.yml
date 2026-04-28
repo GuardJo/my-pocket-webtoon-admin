@@ -1,0 +1,55 @@
+name: Deploy to cloudtype
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  pull_request:
+    paths:
+      - admin-api/**
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Connect deploy key
+        uses: cloudtype-github-actions/connect@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          ghtoken: ${{ secrets.GHP_TOKEN }}
+      - name: Deploy
+        uses: cloudtype-github-actions/deploy@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          project: my-webtoon-adimin-bakckend/my-webtoon-admin-backend
+          stage: main
+          yaml: >
+            name: my-pocket-webtoon-admin
+
+            app: java@17
+
+            options:
+              env:
+                - name: DB_URL
+                  value: ${{ secrets.DB_URL }}
+                - name: DB_USERNAME
+                  value: ${{ secrets.DB_USERNAME }}
+                - name: DB_PASSWORD
+                  value: ${{ secrets.DB_PASSWORD }}
+                - name: JWT_SECRET_KEY
+                  value: ${{ secrets.JWT_SECRET_KEY }}
+                - name: SPRING_PROFILES_ACTIVE
+                  value: prod
+              buildenv: []
+              ports: "8080"
+            context:
+              git:
+                url: git@github.com:${{ github.repository }}.git
+                ref: ${{ github.ref }}
