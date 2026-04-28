@@ -49,6 +49,7 @@ jobs:
                   value: prod
               buildenv: []
               ports: "8080"
+              strategy: rolling
             context:
               git:
                 url: git@github.com:${{ github.repository }}.git
