@@ -52,7 +52,7 @@ class FileStorageUploaderTest {
         assertThat(Files.readAllBytes(savedFile)).isEqualTo(file.getBytes());
     }
 
-    @DisplayName("입력 스트림 업로드 시 원본 파일명과 디렉터리 구조를 유지한다")
+    @DisplayName("입력 스트림 업로드 시 원본 파일명을 보존하고 저장 파일명을 난수화한다")
     @Test
     void test_upload_inputStream_success() throws IOException {
         byte[] content = "episode-image-content".getBytes();
@@ -67,9 +67,10 @@ class FileStorageUploaderTest {
 
         Path savedFile = Path.of(storedFile.absolutePath());
         assertThat(storedFile.originalFilename()).isEqualTo(originalFilename);
-        assertThat(storedFile.storedFilename()).isEqualTo(originalFilename);
+        assertThat(storedFile.storedFilename()).isNotEqualTo(originalFilename);
+        assertThat(storedFile.storedFilename()).matches("[0-9a-f]{32}\\.jpg");
         assertThat(storedFile.size()).isEqualTo(content.length);
-        assertThat(storedFile.publicUrl()).isEqualTo("http://localhost:8080" + UPLOAD_URL_PREFIX + "/" + filePath + "/" + originalFilename);
+        assertThat(storedFile.publicUrl()).isEqualTo("http://localhost:8080" + UPLOAD_URL_PREFIX + "/" + filePath + "/" + storedFile.storedFilename());
         assertThat(savedFile).exists();
         assertThat(savedFile.getParent()).isEqualTo(tempDir.resolve("works/10/1"));
         assertThat(Files.readAllBytes(savedFile)).isEqualTo(content);

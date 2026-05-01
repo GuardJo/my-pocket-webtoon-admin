@@ -69,7 +69,8 @@ public class LocalStorageUploader implements FileStorageUploader {
         }
 
         String sanitizedFilename = sanitizeFilename(originalFilename);
-        Path targetFile = targetDirectory.resolve(sanitizedFilename).normalize();
+        String storedFilename = createStoredFilename(sanitizedFilename);
+        Path targetFile = targetDirectory.resolve(storedFilename).normalize();
 
         if (!targetFile.startsWith(targetDirectory)) {
             throw new IllegalArgumentException("업로드 파일 경로가 올바르지 않습니다.");
@@ -82,9 +83,9 @@ public class LocalStorageUploader implements FileStorageUploader {
 
             return new StoredFile(
                     sanitizedFilename,
-                    sanitizedFilename,
+                    storedFilename,
                     targetFile.toString(),
-                    buildPublicUrl(normalizedDirectory, sanitizedFilename),
+                    buildPublicUrl(normalizedDirectory, storedFilename),
                     fileSize
             );
         } catch (IOException e) {
