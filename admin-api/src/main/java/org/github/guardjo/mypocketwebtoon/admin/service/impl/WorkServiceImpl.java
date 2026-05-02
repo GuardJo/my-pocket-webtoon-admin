@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -152,8 +153,9 @@ public class WorkServiceImpl implements WorkService {
                 );
                 episodeDraft.validateSortOrderAvailable(archiveEntry.sortOrder(), normalizedEntryName);
 
+                byte[] entryContent = tarArchiveInputStream.readAllBytes();
                 StoredFile storedEpisodeImage = fileStorageUploader.upload(
-                        tarArchiveInputStream,
+                        new ByteArrayInputStream(entryContent),
                         archiveEntry.fileName(),
                         buildEpisodeDirectory(workEntity, archiveEntry.episodeNo())
                 );
@@ -267,13 +269,9 @@ public class WorkServiceImpl implements WorkService {
      */
     private int parseEpisodeNo(String episodeDirectory, String entryName) {
         try {
-            int episodeNo = Integer.parseInt(episodeDirectory);
-            if (episodeNo <= 0) {
-                throw new NumberFormatException("episodeNo must be positive");
-            }
-            return episodeNo;
+            return Integer.parseInt(episodeDirectory);
         } catch (NumberFormatException e) {
-            throw new WorkUploadException("회차 디렉터리명은 양의 정수여야 합니다. entry = " + entryName, e);
+            throw new WorkUploadException("회차 디렉터리명은 정수여야 합니다. entry = " + entryName, e);
         }
     }
 

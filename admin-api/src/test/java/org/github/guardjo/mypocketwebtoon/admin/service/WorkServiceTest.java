@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
@@ -158,6 +159,42 @@ class WorkServiceTest {
         assertThat(savedWork.getDescription()).isEqualTo(uploadRequest.description());
         assertThat(savedWork.getSerialState()).isEqualTo(uploadRequest.serialState());
         assertThat(savedWork.isVisibility()).isEqualTo(uploadRequest.visibility());
+    }
+
+    @DisplayName("회차 이미지 업로드 시 tar 엔트리별 독립된 스트림을 전달한다")
+    @Test
+    void test_uploadWork_uploadsIndependentEpisodeEntryStreams() {
+        WorkUploadRequest uploadRequest = workUploadRequest(null);
+        stubSavedWork(1L);
+        given(fileStorageUploader.upload(any(InputStream.class), anyString(), anyString()))
+                .willAnswer(invocation -> {
+                    InputStream inputStream = invocation.getArgument(0, InputStream.class);
+                    String originalFilename = invocation.getArgument(1, String.class);
+                    String directory = invocation.getArgument(2, String.class);
+                    byte[] content = inputStream.readAllBytes();
+
+                    return new StoredFile(
+                            originalFilename,
+                            originalFilename,
+                            "/tmp/storage/" + directory + "/" + originalFilename,
+                            new String(content, StandardCharsets.UTF_8),
+                            content.length
+                    );
+                });
+
+        workService.uploadWork(uploadRequest);
+
+        ArgumentCaptor<Iterable> episodeImageCaptor = ArgumentCaptor.forClass(Iterable.class);
+        then(episodeImageRepository).should().saveAll(episodeImageCaptor.capture());
+
+        List<EpisodeImageEntity> savedEpisodeImages = toList((Iterable<EpisodeImageEntity>) episodeImageCaptor.getValue());
+        assertThat(savedEpisodeImages)
+                .extracting("sort_order", "fileUrl", "fileSize")
+                .containsExactly(
+                        tuple(1, "episode-1-image-1", 17L),
+                        tuple(2, "episode-1-image-2", 17L),
+                        tuple(1, "episode-2-image-1", 17L)
+                );
     }
 
     @DisplayName("썸네일 파일 저장 중 오류가 발생하면 DB 저장을 진행하지 않는다")
