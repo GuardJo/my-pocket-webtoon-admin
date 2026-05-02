@@ -3,7 +3,6 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -70,11 +69,11 @@ public abstract class AbstractStorageUploaderImpl implements FileStorageUploader
     }
 
     /**
-     * InputStream 검증
+     * 파일 내용 검증
      */
-    void validateInputStream(InputStream inputStream) {
-        if (inputStream == null) {
-            throw new IllegalArgumentException("저장할 파일 스트림이 비어 있습니다.");
+    void validateContent(byte[] content) {
+        if (content == null) {
+            throw new IllegalArgumentException("저장할 파일 내용이 비어 있습니다.");
         }
     }
 }

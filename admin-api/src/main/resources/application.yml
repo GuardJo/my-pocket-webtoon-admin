@@ -39,6 +39,7 @@ storage:
     public-base-url: ${R2_PUBLIC_URL:http://localhost:8080}
     access-key: ${R2_ACCESS_KEY:test-access-key}
     secret-key: ${R2_SECRET_KEY:test-secret-key}
+  upload-concurrency: ${UPLOAD_CONCURRENCY:12}
 logging:
   level:
     org.github.guardjo.mypocketwebtoon.admin: debug

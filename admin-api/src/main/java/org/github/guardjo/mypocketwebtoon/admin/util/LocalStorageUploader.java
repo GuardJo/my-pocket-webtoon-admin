@@ -7,12 +7,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 
 @RequiredArgsConstructor
@@ -54,8 +52,8 @@ public class LocalStorageUploader extends AbstractStorageUploaderImpl {
     }
 
     @Override
-    public StoredFile upload(InputStream inputStream, String originalFilename, String directory) {
-        validateInputStream(inputStream);
+    public StoredFile upload(byte[] content, String originalFilename, String directory) {
+        validateContent(content);
 
         Path rootPath = Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
         String normalizedDirectory = normalizeDirectory(directory);
@@ -75,15 +73,14 @@ public class LocalStorageUploader extends AbstractStorageUploaderImpl {
 
         try {
             Files.createDirectories(targetDirectory);
-            Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            long fileSize = Files.size(targetFile);
+            Files.write(targetFile, content);
 
             return new StoredFile(
                     sanitizedFilename,
                     storedFilename,
                     targetFile.toString(),
                     buildPublicUrl(normalizedDirectory, storedFilename),
-                    fileSize
+                    content.length
             );
         } catch (IOException e) {
             throw new UncheckedIOException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);

@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,9 +21,7 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class FileStorageUploaderTest {
     @DisplayName("LocalStorage")
@@ -65,18 +62,14 @@ class FileStorageUploaderTest {
             assertThat(Files.readAllBytes(savedFile)).isEqualTo(file.getBytes());
         }
 
-        @DisplayName("입력 스트림 업로드 시 원본 파일명을 보존하고 저장 파일명을 난수화한다")
+        @DisplayName("파일 내용 업로드 시 원본 파일명을 보존하고 저장 파일명을 난수화한다")
         @Test
-        void test_upload_inputStream_success() throws IOException {
+        void test_upload_content_success() throws IOException {
             byte[] content = "episode-image-content".getBytes();
             String originalFilename = "view-padding-02-img-001.jpg";
             String filePath = "works/10/1";
 
-            StoredFile storedFile = fileStorageUploader.upload(
-                    new ByteArrayInputStream(content),
-                    originalFilename,
-                    filePath
-            );
+            StoredFile storedFile = fileStorageUploader.upload(content, originalFilename, filePath);
 
             Path savedFile = Path.of(storedFile.absolutePath());
             assertThat(storedFile.originalFilename()).isEqualTo(originalFilename);
@@ -107,9 +100,9 @@ class FileStorageUploaderTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("저장할 파일이 비어 있습니다.");
 
-            assertThatThrownBy(() -> fileStorageUploader.upload(null, "episode-001.jpg", "docs"))
+            assertThatThrownBy(() -> fileStorageUploader.upload((byte[]) null, "episode-001.jpg", "docs"))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("저장할 파일 스트림이 비어 있습니다.");
+                    .hasMessage("저장할 파일 내용이 비어 있습니다.");
         }
 
         @DisplayName("디렉터리 경로가 올바르지 않으면 예외가 발생한다")
@@ -129,7 +122,7 @@ class FileStorageUploaderTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 경로를 포함한 디렉터리는 사용할 수 없습니다.");
 
-            assertThatThrownBy(() -> uploader.upload(new ByteArrayInputStream("file".getBytes()), "../outside.jpg", "episodes"))
+            assertThatThrownBy(() -> uploader.upload("file".getBytes(), "../outside.jpg", "episodes"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("업로드 파일명이 올바르지 않습니다.");
         }
@@ -203,41 +196,34 @@ class FileStorageUploaderTest {
 
             assertThat(storedFile.originalFilename()).isEqualTo("thumbnail.png");
             assertThat(storedFile.storedFilename()).isEqualTo(request.key());
-            assertThat(storedFile.absolutePath()).isEqualTo(BUCKET_NAME + "/" + request.key());
-            assertThat(storedFile.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + BUCKET_NAME + "/" + request.key());
+            assertThat(storedFile.absolutePath()).isEqualTo(request.key());
+            assertThat(storedFile.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + request.key());
             assertThat(storedFile.size()).isEqualTo(file.getSize());
         }
 
-        @DisplayName("입력 스트림 업로드 시 원본 파일명을 보존하고 저장 파일명을 난수화한다")
+        @DisplayName("파일 내용 업로드 시 R2 스토리지에 저장하고 공개 URL을 반환한다")
         @Test
-        void test_upload_inputStream_success() {
+        void test_upload_content_success() {
             byte[] content = "episode-image-content".getBytes();
             String originalFilename = "view-padding-02-img-001.jpg";
             String filePath = "works/10/1";
 
-            StoredFile storedFile = fileStorageUploader.upload(
-                    new ByteArrayInputStream(content),
-                    originalFilename,
-                    filePath
-            );
+            StoredFile storedFile = fileStorageUploader.upload(content, originalFilename, filePath);
 
             var requestCaptor = org.mockito.ArgumentCaptor.forClass(PutObjectRequest.class);
             verify(r2Client).putObject(requestCaptor.capture(), any(RequestBody.class));
 
             PutObjectRequest request = requestCaptor.getValue();
             assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
-            assertThat(request.key()).startsWith(filePath + "/");
             assertThat(request.key()).matches(filePath + "/[0-9a-f]{32}\\.jpg");
             assertThat(request.contentType()).isEqualTo("image/jpeg");
             assertThat(request.contentLength()).isEqualTo((long) content.length);
 
             assertThat(storedFile.originalFilename()).isEqualTo(originalFilename);
             assertThat(storedFile.storedFilename()).isEqualTo(request.key());
-            assertThat(storedFile.storedFilename()).isNotEqualTo(originalFilename);
-            assertThat(storedFile.storedFilename()).matches(filePath + "/[0-9a-f]{32}\\.jpg");
+            assertThat(storedFile.absolutePath()).isEqualTo(request.key());
+            assertThat(storedFile.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + request.key());
             assertThat(storedFile.size()).isEqualTo(content.length);
-            assertThat(storedFile.absolutePath()).isEqualTo(BUCKET_NAME + "/" + request.key());
-            assertThat(storedFile.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + BUCKET_NAME + "/" + request.key());
         }
 
         @DisplayName("비어 있거나 잘못된 파일 저장 시 예외가 발생한다")
@@ -258,9 +244,9 @@ class FileStorageUploaderTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("저장할 파일이 비어 있습니다.");
 
-            assertThatThrownBy(() -> fileStorageUploader.upload(null, "episode-001.jpg", "docs"))
+            assertThatThrownBy(() -> fileStorageUploader.upload((byte[]) null, "episode-001.jpg", "docs"))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("저장할 파일 스트림이 비어 있습니다.");
+                    .hasMessage("저장할 파일 내용이 비어 있습니다.");
 
             verify(r2Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
         }
@@ -279,7 +265,7 @@ class FileStorageUploaderTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 경로를 포함한 디렉터리는 사용할 수 없습니다.");
 
-            assertThatThrownBy(() -> fileStorageUploader.upload(new ByteArrayInputStream("file".getBytes()), "../outside.jpg", "episodes"))
+            assertThatThrownBy(() -> fileStorageUploader.upload("file".getBytes(), "../outside.jpg", "episodes"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("업로드 파일명이 올바르지 않습니다.");
 

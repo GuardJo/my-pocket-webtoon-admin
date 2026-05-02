@@ -15,7 +15,6 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLConnection;
@@ -69,13 +68,12 @@ public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
     }
 
     @Override
-    public StoredFile upload(InputStream inputStream, String originalFilename, String directory) {
-        log.debug("upload  fileStream, fileName = {}", originalFilename);
-        validateInputStream(inputStream);
+    public StoredFile upload(byte[] content, String originalFilename, String directory) {
+        log.debug("upload fileContent, fileName = {}", originalFilename);
+        validateContent(content);
 
         Path targetFile = generateTargetFilePath(originalFilename, directory);
         try {
-            byte[] content = inputStream.readAllBytes();
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(targetFile.toString())
@@ -85,7 +83,7 @@ public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
 
             r2Client.putObject(putObjectRequest, RequestBody.fromBytes(content));
 
-            log.debug("Uploaded fileStream, fileName = {}, storedName = {}", originalFilename, putObjectRequest.key());
+            log.debug("Uploaded fileContent, fileName = {}, storedName = {}", originalFilename, putObjectRequest.key());
             return generateStoredFile(putObjectRequest, originalFilename, putObjectRequest.contentLength());
         } catch (IOException e) {
             throw new UncheckedIOException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
@@ -168,12 +166,11 @@ public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
     파일 저장 정보 VO 객체 생성
      */
     private StoredFile generateStoredFile(PutObjectRequest putObjectRequest, String originalFilename, long fileSize) {
-        String absolutePath = putObjectRequest.bucket() + "/" + putObjectRequest.key();
         return new StoredFile(
                 originalFilename,
                 putObjectRequest.key(),
-                absolutePath,
-                publicBaseUrl + "/" + absolutePath,
+                putObjectRequest.key(),
+                publicBaseUrl + "/" + putObjectRequest.key(),
                 fileSize
         );
     }

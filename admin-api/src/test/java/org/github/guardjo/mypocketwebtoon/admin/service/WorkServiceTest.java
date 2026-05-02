@@ -2,6 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.service;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.github.guardjo.mypocketwebtoon.admin.config.properties.StorageProperties;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
@@ -15,11 +16,12 @@ import org.github.guardjo.mypocketwebtoon.admin.repository.ThumbnailImageReposit
 import org.github.guardjo.mypocketwebtoon.admin.repository.WorkRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.impl.WorkServiceImpl;
 import org.github.guardjo.mypocketwebtoon.admin.util.FileStorageUploader;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,19 +29,17 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyIterable;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -48,8 +48,9 @@ import static org.mockito.Mockito.times;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings({"rawtypes", "unchecked"})
 class WorkServiceTest {
-    @InjectMocks
     private WorkServiceImpl workService;
+    private ExecutorService episodeUploadExecutor;
+    private StorageProperties storageProperties;
 
     @Mock
     private ThumbnailImageRepository thumbnailImageRepository;
@@ -66,6 +67,26 @@ class WorkServiceTest {
     @Mock
     private FileStorageUploader fileStorageUploader;
 
+    @BeforeEach
+    void setUp() {
+        this.episodeUploadExecutor = Executors.newFixedThreadPool(2);
+        this.storageProperties = new StorageProperties(12);
+        this.workService = new WorkServiceImpl(
+                thumbnailImageRepository,
+                episodeRepository,
+                episodeImageRepository,
+                workRepository,
+                fileStorageUploader,
+                episodeUploadExecutor,
+                storageProperties
+        );
+    }
+
+    @AfterEach
+    void tearDown() {
+        episodeUploadExecutor.shutdownNow();
+    }
+
     @DisplayName("썸네일이 없는 요청은 작품과 에피소드 정보를 함께 저장한다")
     @Test
     void test_uploadWork_withoutThumbnail() {
@@ -79,9 +100,9 @@ class WorkServiceTest {
         ArgumentCaptor<Iterable> episodeImageCaptor = ArgumentCaptor.forClass(Iterable.class);
 
         workService.uploadWork(uploadRequest);
-
+        
         then(fileStorageUploader).should(never()).upload(any(MockMultipartFile.class), eq("thumbnail"));
-        then(fileStorageUploader).should(times(3)).upload(any(InputStream.class), anyString(), anyString());
+        then(fileStorageUploader).should(times(3)).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
         then(thumbnailImageRepository).should(never()).save(any(ThumbnailImageEntity.class));
         then(thumbnailImageRepository).should().saveAll(episodeThumbnailCaptor.capture());
@@ -141,7 +162,7 @@ class WorkServiceTest {
         workService.uploadWork(uploadRequest);
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
-        then(fileStorageUploader).should(times(3)).upload(any(InputStream.class), anyString(), anyString());
+        then(fileStorageUploader).should(times(3)).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
         then(thumbnailImageRepository).should().save(thumbnailCaptor.capture());
         then(thumbnailImageRepository).should().saveAll(anyIterable());
@@ -161,17 +182,16 @@ class WorkServiceTest {
         assertThat(savedWork.isVisibility()).isEqualTo(uploadRequest.visibility());
     }
 
-    @DisplayName("회차 이미지 업로드 시 tar 엔트리별 독립된 스트림을 전달한다")
+    @DisplayName("회차 이미지 업로드 시 tar 엔트리별 독립된 파일 내용을 전달한다")
     @Test
-    void test_uploadWork_uploadsIndependentEpisodeEntryStreams() {
+    void test_uploadWork_uploadsIndependentEpisodeEntryContents() {
         WorkUploadRequest uploadRequest = workUploadRequest(null);
         stubSavedWork(1L);
-        given(fileStorageUploader.upload(any(InputStream.class), anyString(), anyString()))
+        given(fileStorageUploader.upload(any(byte[].class), anyString(), anyString()))
                 .willAnswer(invocation -> {
-                    InputStream inputStream = invocation.getArgument(0, InputStream.class);
+                    byte[] content = invocation.getArgument(0, byte[].class);
                     String originalFilename = invocation.getArgument(1, String.class);
                     String directory = invocation.getArgument(2, String.class);
-                    byte[] content = inputStream.readAllBytes();
 
                     return new StoredFile(
                             originalFilename,
@@ -212,7 +232,7 @@ class WorkServiceTest {
                 .hasCauseInstanceOf(IllegalStateException.class);
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
-        then(fileStorageUploader).should(never()).upload(any(InputStream.class), anyString(), anyString());
+        then(fileStorageUploader).should(never()).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
         then(thumbnailImageRepository).shouldHaveNoInteractions();
         then(workRepository).shouldHaveNoInteractions();
@@ -245,7 +265,7 @@ class WorkServiceTest {
                 .hasCauseInstanceOf(IllegalStateException.class);
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
-        then(fileStorageUploader).should(never()).upload(any(InputStream.class), anyString(), anyString());
+        then(fileStorageUploader).should(never()).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should().delete(eq(storedThumbnailFile));
         then(thumbnailImageRepository).should().save(any(ThumbnailImageEntity.class));
         then(workRepository).should().save(any(WorkEntity.class));
@@ -277,7 +297,7 @@ class WorkServiceTest {
                 .hasMessageContaining("duplicated title");
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
-        then(fileStorageUploader).should(never()).upload(any(InputStream.class), anyString(), anyString());
+        then(fileStorageUploader).should(never()).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should().delete(eq(storedThumbnailFile));
         then(thumbnailImageRepository).should().save(any(ThumbnailImageEntity.class));
         then(workRepository).should().save(any(WorkEntity.class));
@@ -313,7 +333,7 @@ class WorkServiceTest {
                 .hasCauseInstanceOf(IllegalStateException.class);
 
         then(fileStorageUploader).should().upload(eq(thumbnailFile), eq("thumbnail"));
-        then(fileStorageUploader).should(times(3)).upload(any(InputStream.class), anyString(), anyString());
+        then(fileStorageUploader).should(times(3)).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should(times(4)).delete(deletedFileCaptor.capture());
 
         assertThat(deletedFileCaptor.getAllValues())
@@ -342,7 +362,7 @@ class WorkServiceTest {
     }
 
     private void stubEpisodeUploads() {
-        given(fileStorageUploader.upload(any(InputStream.class), anyString(), anyString()))
+        given(fileStorageUploader.upload(any(byte[].class), anyString(), anyString()))
                 .willAnswer(invocation -> {
                     String originalFilename = invocation.getArgument(1, String.class);
                     String directory = invocation.getArgument(2, String.class);

@@ -19,3 +19,10 @@ storage:
     upload-path: "./storage"
     url-prefix: "/uploads"
     public-base-url: ""
+  r2:
+    account-id: ${R2_ACCOUNT_ID:test-id}
+    bucket-name: ${R2_BUCKET_NAME:test-bucket}
+    public-base-url: ${R2_PUBLIC_URL:http://localhost:8080}
+    access-key: ${R2_ACCESS_KEY:test-access-key}
+    secret-key: ${R2_SECRET_KEY:test-secret-key}
+  upload-concurrency: 12

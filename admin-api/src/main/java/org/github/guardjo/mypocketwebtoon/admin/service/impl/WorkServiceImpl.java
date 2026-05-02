@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.github.guardjo.mypocketwebtoon.admin.config.properties.StorageProperties;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
@@ -23,10 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,7 +45,8 @@ public class WorkServiceImpl implements WorkService {
     private final EpisodeImageRepository episodeImageRepository;
     private final WorkRepository workRepository;
     private final FileStorageUploader fileStorageUploader;
-
+    private final ExecutorService episodeUploadExecutor;
+    private final StorageProperties storageProperties;
 
     @Transactional
     @Override
@@ -133,6 +135,8 @@ public class WorkServiceImpl implements WorkService {
         validateEpisodeFile(episodeFile);
 
         Map<Integer, EpisodeDraft> episodeDrafts = new TreeMap<>();
+        List<EpisodeUploadTask> uploadTasks = new ArrayList<>();
+        Semaphore uploadPermits = new Semaphore(storageProperties.uploadConcurrency());
 
         try (InputStream inputStream = episodeFile.getInputStream();
              TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(inputStream)) {
@@ -154,24 +158,135 @@ public class WorkServiceImpl implements WorkService {
                 episodeDraft.validateSortOrderAvailable(archiveEntry.sortOrder(), normalizedEntryName);
 
                 byte[] entryContent = tarArchiveInputStream.readAllBytes();
-                StoredFile storedEpisodeImage = fileStorageUploader.upload(
-                        new ByteArrayInputStream(entryContent),
-                        archiveEntry.fileName(),
-                        buildEpisodeDirectory(workEntity, archiveEntry.episodeNo())
-                );
+                acquireUploadPermit(uploadPermits);
+                Future<StoredFile> uploadFuture;
+                try {
+                    uploadFuture = episodeUploadExecutor.submit(
+                            () -> uploadEpisodeImage(entryContent, archiveEntry, workEntity, uploadPermits)
+                    );
+                } catch (RuntimeException e) {
+                    uploadPermits.release();
+                    throw e;
+                }
 
-                uploadedFiles.add(storedEpisodeImage);
-                episodeDraft.addImage(archiveEntry.sortOrder(), storedEpisodeImage);
+                uploadTasks.add(new EpisodeUploadTask(archiveEntry, uploadFuture));
             }
         } catch (IOException e) {
+            collectUploadedEpisodeFilesForRollback(uploadTasks, uploadedFiles);
             throw new WorkUploadException("회차 tar 파일을 읽지 못했습니다.", e);
+        } catch (RuntimeException e) {
+            collectUploadedEpisodeFilesForRollback(uploadTasks, uploadedFiles);
+            throw e;
         }
+
+        collectEpisodeUploadResults(uploadTasks, episodeDrafts, uploadedFiles);
 
         if (episodeDrafts.isEmpty()) {
             throw new WorkUploadException("회차 tar 파일에서 저장할 이미지 리소스를 찾지 못했습니다.");
         }
 
         persistEpisodes(workEntity, episodeDrafts);
+    }
+
+    private StoredFile uploadEpisodeImage(
+            byte[] entryContent,
+            EpisodeArchiveEntry archiveEntry,
+            WorkEntity workEntity,
+            Semaphore uploadPermits
+    ) {
+        try {
+            return fileStorageUploader.upload(
+                    entryContent,
+                    archiveEntry.fileName(),
+                    buildEpisodeDirectory(workEntity, archiveEntry.episodeNo())
+            );
+        } finally {
+            uploadPermits.release();
+        }
+    }
+
+    /*
+    세마포 할당
+     */
+    private void acquireUploadPermit(Semaphore uploadPermits) {
+        try {
+            uploadPermits.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new WorkUploadException("회차 이미지 업로드 작업이 중단되었습니다.", e);
+        }
+    }
+
+    /*
+    업로드된 에피소드 파일 결과 수집
+     */
+    private void collectEpisodeUploadResults(
+            List<EpisodeUploadTask> uploadTasks,
+            Map<Integer, EpisodeDraft> episodeDrafts,
+            List<StoredFile> uploadedFiles
+    ) {
+        List<StoredFile> uploadedEpisodeFiles = new ArrayList<>(uploadTasks.size());
+        RuntimeException uploadException = null;
+
+        for (EpisodeUploadTask uploadTask : uploadTasks) {
+            try {
+                StoredFile storedEpisodeImage = uploadTask.uploadFuture().get();
+                uploadedEpisodeFiles.add(storedEpisodeImage);
+                EpisodeDraft episodeDraft = episodeDrafts.get(uploadTask.archiveEntry().episodeNo());
+                episodeDraft.addImage(uploadTask.archiveEntry().sortOrder(), storedEpisodeImage);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                uploadException = new WorkUploadException("회차 이미지 업로드 작업이 중단되었습니다.", e);
+                cancelEpisodeUploadTasks(uploadTasks);
+                break;
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                RuntimeException currentException = cause instanceof RuntimeException runtimeException
+                        ? runtimeException
+                        : new WorkUploadException("회차 이미지 업로드에 실패했습니다.", cause);
+                if (uploadException == null) {
+                    uploadException = currentException;
+                }
+            }
+        }
+
+        uploadedFiles.addAll(uploadedEpisodeFiles);
+        if (uploadException != null) {
+            cancelEpisodeUploadTasks(uploadTasks);
+            throw uploadException;
+        }
+    }
+
+    /*
+    파일 비동기 업로드 취소 처리
+     */
+    private void cancelEpisodeUploadTasks(List<EpisodeUploadTask> uploadTasks) {
+        for (EpisodeUploadTask uploadTask : uploadTasks) {
+            uploadTask.uploadFuture().cancel(true);
+        }
+    }
+
+    /*
+    비동기 취소 처리 결과 수집
+     */
+    private void collectUploadedEpisodeFilesForRollback(
+            List<EpisodeUploadTask> uploadTasks,
+            List<StoredFile> uploadedFiles
+    ) {
+        for (EpisodeUploadTask uploadTask : uploadTasks) {
+            try {
+                uploadedFiles.add(uploadTask.uploadFuture().get());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                cancelEpisodeUploadTasks(uploadTasks);
+                return;
+            } catch (ExecutionException e) {
+                log.warn("Failed to upload episode image before aborting work upload, fileName = {}",
+                        uploadTask.archiveEntry().fileName(), e.getCause());
+            } catch (CancellationException ignored) {
+                log.debug("Cancelled episode image upload, fileName = {}", uploadTask.archiveEntry().fileName());
+            }
+        }
     }
 
     /*
@@ -346,7 +461,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         String fileName = segments[segments.length - 1];
-        return Arrays.stream(segments).anyMatch("__MACOSX"::equals)
+        return Arrays.asList(segments).contains("__MACOSX")
                 || ".DS_Store".equalsIgnoreCase(fileName)
                 || fileName.startsWith("._")
                 || "@PaxHeader".equals(fileName)
@@ -357,6 +472,12 @@ public class WorkServiceImpl implements WorkService {
             int episodeNo,
             int sortOrder,
             String fileName
+    ) {
+    }
+
+    private record EpisodeUploadTask(
+            EpisodeArchiveEntry archiveEntry,
+            Future<StoredFile> uploadFuture
     ) {
     }
 
