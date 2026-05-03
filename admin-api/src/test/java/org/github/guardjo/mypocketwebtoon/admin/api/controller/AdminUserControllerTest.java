@@ -2,6 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.github.guardjo.mypocketwebtoon.admin.config.StaticResourceConfig;
 import org.github.guardjo.mypocketwebtoon.admin.config.TestSecurityConfig;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.LoginRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
@@ -10,11 +11,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,7 +33,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = AdminUserController.class)
+@WebMvcTest(
+        controllers = AdminUserController.class,
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = StaticResourceConfig.class
+        )
+)
 @Import(value = TestSecurityConfig.class)
 class AdminUserControllerTest {
     @Autowired

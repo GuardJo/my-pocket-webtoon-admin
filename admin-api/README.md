@@ -77,14 +77,14 @@ bigint id pk "작품 회차별 이미지 식별키"
 bigint episode_id fk "작품 회차 식별키"
 integer sort_order uk "작품 회차 내 이미지 정렬 순서 (episode_id 와 uk)"
 text file_url uk "이미지 파일 url"
-integer file_size "이미지 파일 크기"
+bigint file_size "이미지 파일 크기"
 timestamp created_at "not null"
 timestamp modified_at "not null"
 }
 thumbnail_image {
 bigint id pk "썸네일 이미지 식별키"
 text file_url uk "이미지 파일 url"
-integer file_size "이미지 파일 크기"
+bigint file_size "이미지 파일 크기"
 timestamp created_at "not null"
 timestamp modified_at "not null"
 }

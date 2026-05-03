@@ -17,9 +17,29 @@ spring:
         show_sql: true
         format_sql: true
         default_batch_fetch_size: 1000
+  servlet:
+    multipart:
+      max-file-size: 4GB
+      max-request-size: 10GB
 server:
   port: 8080
 
 jwt:
   secret: ${JWT_SECRET_KEY:test-secret-key-for-jwt-provider-unit-test-1234}
   expiration-millis: 3_600_000
+
+storage:
+  local:
+    upload-path: "./storage"
+    url-prefix: "/uploads"
+    public-base-url: ""
+  r2:
+    account-id: ${R2_ACCOUNT_ID:test-id}
+    bucket-name: ${R2_BUCKET_NAME:test-bucket}
+    public-base-url: ${R2_PUBLIC_URL:http://localhost:8080}
+    access-key: ${R2_ACCESS_KEY:test-access-key}
+    secret-key: ${R2_SECRET_KEY:test-secret-key}
+  upload-concurrency: ${UPLOAD_CONCURRENCY:12}
+logging:
+  level:
+    org.github.guardjo.mypocketwebtoon.admin: debug

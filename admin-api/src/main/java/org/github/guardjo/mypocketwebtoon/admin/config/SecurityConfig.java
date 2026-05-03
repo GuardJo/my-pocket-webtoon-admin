@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.github.guardjo.mypocketwebtoon.admin.config.properties.LocalStorageProperties;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
@@ -37,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class SecurityConfig {
     private final AdminInfoRepository adminInfoRepository;
+    private final LocalStorageProperties localStorageProperties;
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
 
@@ -47,7 +49,8 @@ public class SecurityConfig {
                             .requestMatchers("/swagger-ui/**",
                                     "/v3/api-docs/**",
                                     "/swagger-ui.html",
-                                    "/swagger-resources/**").permitAll()
+                                    "/swagger-resources/**",
+                                    localStorageProperties.urlPrefix() + "/**").permitAll()
                             .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                             .anyRequest().authenticated();
                 })
