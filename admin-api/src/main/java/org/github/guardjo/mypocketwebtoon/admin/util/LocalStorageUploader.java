@@ -2,19 +2,19 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import lombok.RequiredArgsConstructor;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.LocalStorageProperties;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
 @RequiredArgsConstructor
-public class LocalStorageUploader extends AbstractStorageUploaderImpl {
+public class LocalStorageUploader extends AbstractStorageUploader {
     private final LocalStorageProperties localStorageProperties;
 
     @Override
@@ -37,7 +37,7 @@ public class LocalStorageUploader extends AbstractStorageUploaderImpl {
             Files.createDirectories(targetDirectory);
             file.transferTo(targetFile);
         } catch (IOException e) {
-            throw new UncheckedIOException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkUploadException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
         }
 
         String publicUrl = buildPublicUrl(normalizedDirectory, storedFilename);
@@ -83,7 +83,7 @@ public class LocalStorageUploader extends AbstractStorageUploaderImpl {
                     content.length
             );
         } catch (IOException e) {
-            throw new UncheckedIOException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkUploadException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
@@ -97,7 +97,7 @@ public class LocalStorageUploader extends AbstractStorageUploaderImpl {
         try {
             Files.deleteIfExists(targetFile);
         } catch (IOException e) {
-            throw new UncheckedIOException("로컬 스토리지에서 파일을 삭제하지 못했습니다.", e);
+            throw new WorkUploadException("로컬 스토리지에서 파일을 삭제하지 못했습니다.", e);
         }
     }
 

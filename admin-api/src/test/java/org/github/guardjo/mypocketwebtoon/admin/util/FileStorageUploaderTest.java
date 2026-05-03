@@ -160,7 +160,7 @@ class FileStorageUploaderTest {
         @BeforeEach
         void setUp() {
             r2Client = mock(S3Client.class);
-            fileStorageUploader = new R2StorageUploaderImpl(
+            fileStorageUploader = new R2StorageUploader(
                     new R2StorageProperties(
                             "account-id",
                             BUCKET_NAME,

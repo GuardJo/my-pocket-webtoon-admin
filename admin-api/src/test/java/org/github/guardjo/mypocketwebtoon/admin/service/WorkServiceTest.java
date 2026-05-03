@@ -50,7 +50,6 @@ import static org.mockito.Mockito.times;
 class WorkServiceTest {
     private WorkServiceImpl workService;
     private ExecutorService episodeUploadExecutor;
-    private StorageProperties storageProperties;
 
     @Mock
     private ThumbnailImageRepository thumbnailImageRepository;
@@ -70,7 +69,7 @@ class WorkServiceTest {
     @BeforeEach
     void setUp() {
         this.episodeUploadExecutor = Executors.newFixedThreadPool(2);
-        this.storageProperties = new StorageProperties(12);
+        StorageProperties storageProperties = new StorageProperties(12);
         this.workService = new WorkServiceImpl(
                 thumbnailImageRepository,
                 episodeRepository,
@@ -100,7 +99,7 @@ class WorkServiceTest {
         ArgumentCaptor<Iterable> episodeImageCaptor = ArgumentCaptor.forClass(Iterable.class);
 
         workService.uploadWork(uploadRequest);
-        
+
         then(fileStorageUploader).should(never()).upload(any(MockMultipartFile.class), eq("thumbnail"));
         then(fileStorageUploader).should(times(3)).upload(any(byte[].class), anyString(), anyString());
         then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
@@ -130,7 +129,7 @@ class WorkServiceTest {
                         tuple(2, savedEpisodeThumbnails.get(1))
                 );
         assertThat(savedEpisodeImages)
-                .extracting("sort_order", "fileUrl")
+                .extracting("sortOrder", "fileUrl")
                 .containsExactly(
                         tuple(1, "/uploads/works/1/1/view-padding-02-img-001.jpg"),
                         tuple(2, "/uploads/works/1/1/view-padding-02-img-002.jpg"),
@@ -209,7 +208,7 @@ class WorkServiceTest {
 
         List<EpisodeImageEntity> savedEpisodeImages = toList((Iterable<EpisodeImageEntity>) episodeImageCaptor.getValue());
         assertThat(savedEpisodeImages)
-                .extracting("sort_order", "fileUrl", "fileSize")
+                .extracting("sortOrder", "fileUrl", "fileSize")
                 .containsExactly(
                         tuple(1, "episode-1-image-1", 17L),
                         tuple(2, "episode-1-image-2", 17L),

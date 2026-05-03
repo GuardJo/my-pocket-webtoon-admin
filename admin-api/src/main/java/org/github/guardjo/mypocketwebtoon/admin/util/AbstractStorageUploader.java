@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Objects;
 import java.util.UUID;
 
-public abstract class AbstractStorageUploaderImpl implements FileStorageUploader {
+public abstract class AbstractStorageUploader implements FileStorageUploader {
     /**
      * 파일 검증
      */

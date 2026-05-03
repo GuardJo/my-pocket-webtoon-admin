@@ -334,7 +334,7 @@ public class WorkServiceImpl implements WorkService {
             for (UploadedEpisodeImage uploadedEpisodeImage : episodeDraft.images()) {
                 episodeImages.add(EpisodeImageEntity.builder()
                         .episode(episodeEntity)
-                        .sort_order(uploadedEpisodeImage.sortOrder())
+                        .sortOrder(uploadedEpisodeImage.sortOrder())
                         .fileUrl(uploadedEpisodeImage.storedFile().publicUrl())
                         .fileSize(uploadedEpisodeImage.storedFile().size())
                         .build());

@@ -1,10 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.util;
 
-import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
-import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminRoleEntity;
-import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
-import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
-import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.domain.*;
 
 public class TestDataGenerator {
     private TestDataGenerator() {
@@ -55,6 +51,15 @@ public class TestDataGenerator {
                 .thumbnailImage(thumbnailImage)
                 .likeCount(0)
                 .viewCount(0)
+                .build();
+    }
+
+    public static EpisodeImageEntity episodeImage(EpisodeEntity episode, int sortOrder, String fileUrl, long fileSize) {
+        return EpisodeImageEntity.builder()
+                .episode(episode)
+                .sortOrder(sortOrder)
+                .fileUrl(fileUrl)
+                .fileSize(fileSize)
                 .build();
     }
 }

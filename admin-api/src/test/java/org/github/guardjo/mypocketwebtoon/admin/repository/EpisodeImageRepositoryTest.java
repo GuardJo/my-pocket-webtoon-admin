@@ -44,7 +44,7 @@ class EpisodeImageRepositoryTest {
                 1,
                 "https://cdn.example.com/thumbnail/episode-image-save.png"
         );
-        EpisodeImageEntity expected = episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-save-1.png", 1024);
+        EpisodeImageEntity expected = TestDataGenerator.episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-save-1.png", 1024);
 
         EpisodeImageEntity actual = episodeImageRepository.saveAndFlush(expected);
 
@@ -65,10 +65,10 @@ class EpisodeImageRepositoryTest {
         );
 
         episodeImageRepository.saveAndFlush(
-                episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-duplicate-1.png", 1024)
+                TestDataGenerator.episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-duplicate-1.png", 1024)
         );
 
-        EpisodeImageEntity duplicatedEpisodeImage = episodeImage(
+        EpisodeImageEntity duplicatedEpisodeImage = TestDataGenerator.episodeImage(
                 savedEpisode,
                 1,
                 "https://cdn.example.com/episode/image-duplicate-2.png",
@@ -89,7 +89,7 @@ class EpisodeImageRepositoryTest {
                 "https://cdn.example.com/thumbnail/episode-image-delete.png"
         );
         EpisodeImageEntity savedEpisodeImage = episodeImageRepository.saveAndFlush(
-                episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-delete-1.png", 1024)
+                TestDataGenerator.episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-delete-1.png", 1024)
         );
 
         episodeImageRepository.delete(savedEpisodeImage);
@@ -120,12 +120,4 @@ class EpisodeImageRepositoryTest {
         );
     }
 
-    private EpisodeImageEntity episodeImage(EpisodeEntity episode, int sortOrder, String fileUrl, long fileSize) {
-        return EpisodeImageEntity.builder()
-                .episode(episode)
-                .sort_order(sortOrder)
-                .fileUrl(fileUrl)
-                .fileSize(fileSize)
-                .build();
-    }
 }

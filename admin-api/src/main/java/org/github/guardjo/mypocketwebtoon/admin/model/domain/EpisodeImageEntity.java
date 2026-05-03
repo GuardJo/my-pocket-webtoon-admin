@@ -22,7 +22,7 @@ public class EpisodeImageEntity extends BaseEntity {
     private EpisodeEntity episode;
 
     @Column(nullable = false)
-    private int sort_order;
+    private int sortOrder;
 
     @Column(nullable = false, unique = true)
     private String fileUrl;

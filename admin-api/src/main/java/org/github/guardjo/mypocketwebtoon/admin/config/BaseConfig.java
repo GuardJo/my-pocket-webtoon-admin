@@ -6,7 +6,7 @@ import org.github.guardjo.mypocketwebtoon.admin.config.properties.R2StoragePrope
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.StorageProperties;
 import org.github.guardjo.mypocketwebtoon.admin.util.FileStorageUploader;
 import org.github.guardjo.mypocketwebtoon.admin.util.LocalStorageUploader;
-import org.github.guardjo.mypocketwebtoon.admin.util.R2StorageUploaderImpl;
+import org.github.guardjo.mypocketwebtoon.admin.util.R2StorageUploader;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +34,7 @@ public class BaseConfig {
     @Bean
     @Profile("!local")
     public FileStorageUploader r2StorageUploader() {
-        return new R2StorageUploaderImpl(r2StorageProperties);
+        return new R2StorageUploader(r2StorageProperties);
     }
 
     @Bean(destroyMethod = "shutdown")

@@ -2,6 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.R2StorageProperties;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,7 +16,6 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -24,12 +24,12 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 @Slf4j
-public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
+public class R2StorageUploader extends AbstractStorageUploader {
     private final S3Client r2Client;
     private final String bucketName;
     private final String publicBaseUrl;
 
-    public R2StorageUploaderImpl(R2StorageProperties r2StorageProperties) {
+    public R2StorageUploader(R2StorageProperties r2StorageProperties) {
         this(r2StorageProperties, S3Client.builder()
                 .endpointOverride(URI.create(String.format("https://%s.r2.cloudflarestorage.com", r2StorageProperties.accountId())))
                 .region(Region.of("auto"))
@@ -43,7 +43,7 @@ public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
                 .build());
     }
 
-    R2StorageUploaderImpl(R2StorageProperties r2StorageProperties, S3Client r2Client) {
+    R2StorageUploader(R2StorageProperties r2StorageProperties, S3Client r2Client) {
         this.r2Client = r2Client;
         this.bucketName = r2StorageProperties.bucketName();
         this.publicBaseUrl = r2StorageProperties.publicBaseUrl();
@@ -63,7 +63,7 @@ public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
             log.debug("Uploaded file, fileName = {}, storedName = {}", file.getOriginalFilename(), putObjectRequest.key());
             return generateStoredFile(putObjectRequest, file.getOriginalFilename(), file.getSize());
         } catch (IOException e) {
-            throw new UncheckedIOException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkUploadException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
@@ -86,7 +86,7 @@ public class R2StorageUploaderImpl extends AbstractStorageUploaderImpl {
             log.debug("Uploaded fileContent, fileName = {}, storedName = {}", originalFilename, putObjectRequest.key());
             return generateStoredFile(putObjectRequest, originalFilename, putObjectRequest.contentLength());
         } catch (IOException e) {
-            throw new UncheckedIOException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkUploadException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
