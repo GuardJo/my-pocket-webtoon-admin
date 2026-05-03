@@ -47,6 +47,18 @@ jobs:
                   value: ${{ secrets.JWT_SECRET_KEY }}
                 - name: SPRING_PROFILES_ACTIVE
                   value: prod
+                - name: R2_ACCESS_KEY
+                  value: ${{ secrets.R2_ACCESS_KEY }}
+                - name: R2_ACCOUNT_ID
+                  value: ${{ secrets.R2_ACCOUNT_ID }}
+                - name: R2_BUCKET_NAME
+                  value: ${{ secrets.R2_BUCKET_NAME }}
+                - name: R2_PUBLIC_URL
+                  value: ${{ secrets.R2_PUBLIC_URL }}
+                - name: R2_SECRET_KEY
+                  value: ${{ secrets.R2_SECRET_KEY }}
+                - name: UPLOAD_CONCURRENCY
+                  value: ${{ secrets.UPLOAD_CONCURRENCY }}
               buildenv: []
               ports: "8080"
               strategy: rolling
