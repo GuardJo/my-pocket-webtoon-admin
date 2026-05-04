@@ -10,6 +10,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntit
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeImageRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.ThumbnailImageRepository;
@@ -25,6 +26,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayOutputStream;
@@ -343,6 +347,45 @@ class WorkServiceTest {
                         "/uploads/works/1/1/view-padding-02-img-001.jpg",
                         "/uploads/thumbnail/stored-thumbnail.png"
                 );
+    }
+
+    @DisplayName("페이징 처리된 작품 목록 조회 : 데이터 존재")
+    @Test
+    void test_getWorkSummaries() {
+        PageRequest pageRequest = PageRequest.of(0, 10);
+        WorkSummary workSummary = new WorkSummary(
+                1L,
+                "/uploads/thumbnail/work-list.png",
+                "목록 조회용 작품",
+                "COMPLETED",
+                true
+        );
+        Page<WorkSummary> expected = new PageImpl<>(List.of(workSummary), pageRequest, 1);
+
+        given(workRepository.findAllWithPagination(eq(pageRequest))).willReturn(expected);
+
+        Page<WorkSummary> actual = workService.getWorkSummaries(pageRequest);
+
+        assertThat(actual).isSameAs(expected);
+        assertThat(actual.getTotalElements()).isEqualTo(1);
+        assertThat(actual.getContent()).containsExactly(workSummary);
+        then(workRepository).should().findAllWithPagination(eq(pageRequest));
+    }
+
+    @DisplayName("페이징 처리된 작품 목록 조회 : 데이터 없음")
+    @Test
+    void test_getWorkSummaries_empty() {
+        PageRequest pageRequest = PageRequest.of(0, 10);
+        Page<WorkSummary> expected = Page.empty(pageRequest);
+
+        given(workRepository.findAllWithPagination(eq(pageRequest))).willReturn(expected);
+
+        Page<WorkSummary> actual = workService.getWorkSummaries(pageRequest);
+
+        assertThat(actual).isSameAs(expected);
+        assertThat(actual.getTotalElements()).isZero();
+        assertThat(actual.getContent()).isEmpty();
+        then(workRepository).should().findAllWithPagination(eq(pageRequest));
     }
 
     private void stubSavedWork(long workId) {
