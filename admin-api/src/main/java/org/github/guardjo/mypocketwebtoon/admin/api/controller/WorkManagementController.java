@@ -9,7 +9,6 @@ import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -39,17 +38,10 @@ public class WorkManagementController implements WorkApiDocs {
 
     @GetMapping
     @Override
-    public BaseResponse<Page<WorkSummary>> getWorks(@PageableDefault Pageable pageable) {
+    public BaseResponse<Page<WorkSummary>> getWorks(@PageableDefault(sort = "modifiedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("GET : /api/v1/works, pageNumber = {}, pageSize = {}", pageable.getPageNumber(), pageable.getPageSize());
 
-        // 수정일자 기준 내림차순 정렬
-        PageRequest pageRequest = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by(Sort.Order.desc("modifiedAt"))
-        );
-
-        Page<WorkSummary> workSummaries = workService.getWorkSummaries(pageRequest);
+        Page<WorkSummary> workSummaries = workService.getWorkSummaries(pageable);
 
         return BaseResponse.of(HttpStatus.OK, workSummaries);
     }

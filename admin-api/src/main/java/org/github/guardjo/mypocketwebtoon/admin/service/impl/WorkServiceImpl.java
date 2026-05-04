@@ -21,7 +21,7 @@ import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.github.guardjo.mypocketwebtoon.admin.util.FileStorageUploader;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -82,8 +82,8 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public Page<WorkSummary> getWorkSummaries(PageRequest pageRequest) {
-        return workRepository.findAllWithPagination(pageRequest);
+    public Page<WorkSummary> getWorkSummaries(Pageable pageable) {
+        return workRepository.findAllWithPagination(pageable);
     }
 
     /*

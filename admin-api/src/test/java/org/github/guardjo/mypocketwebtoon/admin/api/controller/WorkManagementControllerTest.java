@@ -22,7 +22,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -227,7 +226,6 @@ class WorkManagementControllerTest {
 
     @DisplayName("GET : /api/v1/works - 작품 목록 반환")
     @Test
-    @WithMockUser
     void test_getWorks() throws Exception {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("modifiedAt")));
         List<WorkSummary> content = List.of(new WorkSummary(
@@ -251,7 +249,7 @@ class WorkManagementControllerTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         JavaType pageResponseType = objectMapper.getTypeFactory()
-                .constructParametricType(Page.class, WorkSummary.class);
+                .constructParametricType(WorkSummaryPageResponse.class, WorkSummary.class);
         JavaType baseResponseType = objectMapper.getTypeFactory()
                 .constructParametricType(BaseResponse.class, pageResponseType);
         BaseResponse<WorkSummaryPageResponse<WorkSummary>> actual = objectMapper.readValue(response, baseResponseType);
