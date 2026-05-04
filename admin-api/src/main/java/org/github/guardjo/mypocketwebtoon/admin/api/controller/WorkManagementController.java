@@ -6,13 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.WorkApiDocs;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.unit.DataSize;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/works")
@@ -31,5 +34,15 @@ public class WorkManagementController implements WorkApiDocs {
         workService.uploadWork(workUploadRequest);
 
         return BaseResponse.defaultSuccessResponse();
+    }
+
+    @GetMapping
+    @Override
+    public BaseResponse<Page<WorkSummary>> getWorks(@PageableDefault(sort = "modifiedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        log.info("GET : /api/v1/works, pageNumber = {}, pageSize = {}", pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<WorkSummary> workSummaries = workService.getWorkSummaries(pageable);
+
+        return BaseResponse.of(HttpStatus.OK, workSummaries);
     }
 }

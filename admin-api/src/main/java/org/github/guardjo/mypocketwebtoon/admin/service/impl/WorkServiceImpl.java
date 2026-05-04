@@ -12,6 +12,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntit
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeImageRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.ThumbnailImageRepository;
@@ -19,6 +20,8 @@ import org.github.guardjo.mypocketwebtoon.admin.repository.WorkRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.github.guardjo.mypocketwebtoon.admin.util.FileStorageUploader;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -76,6 +79,11 @@ public class WorkServiceImpl implements WorkService {
             rollbackUploadedFiles(uploadedFiles);
             throw new WorkUploadException("작품 업로드 처리에 실패했습니다.", e);
         }
+    }
+
+    @Override
+    public Page<WorkSummary> getWorkSummaries(Pageable pageable) {
+        return workRepository.findAllWithPagination(pageable);
     }
 
     /*
