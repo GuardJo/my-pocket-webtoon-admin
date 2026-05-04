@@ -1,6 +1,6 @@
 # my-pocket-webtoon-admin
-> admin 서비스의 화면 모듈
 
+> admin 서비스의 화면 모듈
 
 # **인프라 구성**
 
@@ -12,6 +12,7 @@
 - React 19.2.4
 - node ^20
 - tailwindcss
+- storybook
 
 # API 서버
 
