@@ -107,7 +107,7 @@ public class WorkServiceImpl implements WorkService {
                 workEntity.getTitle(),
                 workEntity.getDescription(),
                 (int) episodeTotalCount,
-                workEntity.getModifiedAt().toLocalDate()
+                Objects.isNull(workEntity.getModifiedAt()) ? null : workEntity.getModifiedAt().toLocalDate()
         );
     }
 

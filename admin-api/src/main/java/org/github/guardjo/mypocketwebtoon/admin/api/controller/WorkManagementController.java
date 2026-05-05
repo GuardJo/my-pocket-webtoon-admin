@@ -49,7 +49,7 @@ public class WorkManagementController implements WorkApiDocs {
 
     @GetMapping("/{workId}")
     @Override
-    public BaseResponse<WorkInfo> getWorkInfo(@PathVariable @Valid Long workId) {
+    public BaseResponse<WorkInfo> getWorkInfo(@PathVariable Long workId) {
         log.info("GET : /api/v1/works/" + workId + ", workId = {}", workId);
 
         WorkInfo workInfo = workService.getWorkInfo(workId);

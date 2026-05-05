@@ -28,7 +28,7 @@ public record WorkInfo(
         int episodeTotalSize,
 
         @JsonFormat(pattern = "yyyy.MM.dd")
-        @Schema(description = "마지막 업데이트 일자", example = "yyyy.MM.dd")
+        @Schema(description = "마지막 업데이트 일자", example = "2026.05.05")
         LocalDate lastUpdateDate
 ) {
 }
