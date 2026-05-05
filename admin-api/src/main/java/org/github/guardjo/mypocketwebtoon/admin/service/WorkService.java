@@ -29,5 +29,5 @@ public interface WorkService {
      * @return 에피소드 수량을 포함한 작품 정보
      * @throws jakarta.persistence.EntityNotFoundException 해당하는 작품 정보를 찾지 못했을 경우
      */
-    WorkInfo getWorkInfo(Long workId);
+    WorkInfo getWorkInfo(long workId);
 }

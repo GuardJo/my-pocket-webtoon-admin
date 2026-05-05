@@ -49,10 +49,11 @@ public class WorkManagementController implements WorkApiDocs {
 
     @GetMapping("/{workId}")
     @Override
-    public BaseResponse<WorkInfo> getWorkInfo(@PathVariable Long workId) {
+    public BaseResponse<WorkInfo> getWorkInfo(@PathVariable @Valid Long workId) {
         log.info("GET : /api/v1/works/" + workId + ", workId = {}", workId);
 
-        // TODO 기능 연동
-        return null;
+        WorkInfo workInfo = workService.getWorkInfo(workId);
+
+        return BaseResponse.of(HttpStatus.OK, workInfo);
     }
 }

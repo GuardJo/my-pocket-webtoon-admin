@@ -91,7 +91,7 @@ public class WorkServiceImpl implements WorkService {
 
     @Transactional(readOnly = true)
     @Override
-    public WorkInfo getWorkInfo(Long workId) {
+    public WorkInfo getWorkInfo(long workId) {
         WorkEntity workEntity = workRepository.findById(workId)
                 .orElseThrow(() -> {
                     log.warn("Not found workEntity, workId = {}", workId);

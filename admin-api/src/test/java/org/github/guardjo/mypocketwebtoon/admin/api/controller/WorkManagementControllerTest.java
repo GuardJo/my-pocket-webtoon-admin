@@ -2,10 +2,12 @@ package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import org.github.guardjo.mypocketwebtoon.admin.config.StaticResourceConfig;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +28,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -291,6 +294,62 @@ class WorkManagementControllerTest {
         assertThat(actual.getData().content()).isEmpty();
 
         then(workService).should().getWorkSummaries(eq(pageRequest));
+    }
+
+    @DisplayName("GET : /api/v1/works/{workId} - 특정 작품 조회")
+    @Test
+    void test_getWorkInfo() throws Exception {
+        long workId = 1L;
+        WorkInfo workInfo = new WorkInfo(
+                workId,
+                "/uploads/thumbnail/work-detail.png",
+                "ONGOING",
+                "상세 조회용 작품",
+                "상세 조회용 작품 설명",
+                12,
+                LocalDate.of(2026, 5, 5)
+        );
+
+        given(workService.getWorkInfo(eq(workId))).willReturn(workInfo);
+
+        String response = mockMvc.perform(get("/api/v1/works/{workId}", workId))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, WorkInfo.class);
+        BaseResponse<WorkInfo> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
+        assertThat(actual.getData()).isEqualTo(workInfo);
+
+        then(workService).should().getWorkInfo(eq(workId));
+    }
+
+    @DisplayName("GET : /api/v1/works/{workId} - 조회 실패")
+    @Test
+    void test_getWorkInfo_fail_when_notFound() throws Exception {
+        long workId = 999L;
+
+        given(workService.getWorkInfo(eq(workId))).willThrow(new EntityNotFoundException("작품을 찾을 수 없습니다"));
+
+        String response = mockMvc.perform(get("/api/v1/works/{workId}", workId))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND.name());
+
+        then(workService).should().getWorkInfo(eq(workId));
     }
 
     private MockMultipartFile mockThumbnailFile() {
