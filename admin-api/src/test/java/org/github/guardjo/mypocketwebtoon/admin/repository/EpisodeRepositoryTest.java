@@ -78,6 +78,23 @@ class EpisodeRepositoryTest {
         assertThat(actual.isEmpty()).isTrue();
     }
 
+    @DisplayName("특정 work에 대한 episode 개수 조회")
+    @Test
+    void test_countAllByWork_Id() {
+        WorkEntity saveWork = saveWork("에피소드 수량 조회용 작품", "https://cdn.example.com/thumbnail/episode-count.png");
+        long expected = 10L;
+
+        for (int i = 0; i < expected; i++) {
+            episodeRepository.saveAndFlush(
+                    TestDataGenerator.episodeEntity(saveWork, i, null)
+            );
+        }
+
+        long actual = episodeRepository.countAllByWork_Id(saveWork.getId());
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private WorkEntity saveWork(String title, String thumbnailUrl) {
         ThumbnailImageEntity savedThumbnail = saveThumbnailImage(thumbnailUrl);
         return workRepository.saveAndFlush(TestDataGenerator.workEntity(title, savedThumbnail));
