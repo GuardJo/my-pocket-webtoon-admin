@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -12,6 +13,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntit
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeImageRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeRepository;
@@ -81,9 +83,32 @@ public class WorkServiceImpl implements WorkService {
         }
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Page<WorkSummary> getWorkSummaries(Pageable pageable) {
         return workRepository.findAllWithPagination(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public WorkInfo getWorkInfo(Long workId) {
+        WorkEntity workEntity = workRepository.findById(workId)
+                .orElseThrow(() -> {
+                    log.warn("Not found workEntity, workId = {}", workId);
+                    return new EntityNotFoundException("작품을 찾을 수 없습니다");
+                });
+
+        long episodeTotalCount = episodeRepository.countAllByWork_Id(workEntity.getId());
+
+        return new WorkInfo(
+                workEntity.getId(),
+                Objects.isNull(workEntity.getThumbnailImage()) ? null : workEntity.getThumbnailImage().getFileUrl(),
+                workEntity.getSerialState(),
+                workEntity.getTitle(),
+                workEntity.getDescription(),
+                (int) episodeTotalCount,
+                workEntity.getModifiedAt().toLocalDate()
+        );
     }
 
     /*

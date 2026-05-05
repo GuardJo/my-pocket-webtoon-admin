@@ -34,6 +34,17 @@ public class TestDataGenerator {
                 .build();
     }
 
+    public static WorkEntity workEntity(Long id, String title, ThumbnailImageEntity thumbnailImage) {
+        return WorkEntity.builder()
+                .id(id)
+                .title(title)
+                .description("test-description")
+                .serialState("COMPLETED")
+                .thumbnailImage(thumbnailImage)
+                .visibility(true)
+                .build();
+    }
+
     public static WorkEntity workEntity(String title, ThumbnailImageEntity thumbnailImage) {
         return WorkEntity.builder()
                 .title(title)

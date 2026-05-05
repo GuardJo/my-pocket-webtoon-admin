@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.StorageProperties;
@@ -10,6 +11,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntit
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeImageRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.EpisodeRepository;
@@ -17,6 +19,7 @@ import org.github.guardjo.mypocketwebtoon.admin.repository.ThumbnailImageReposit
 import org.github.guardjo.mypocketwebtoon.admin.repository.WorkRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.impl.WorkServiceImpl;
 import org.github.guardjo.mypocketwebtoon.admin.util.FileStorageUploader;
+import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +39,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.StreamSupport;
@@ -387,6 +391,46 @@ class WorkServiceTest {
         assertThat(actual.getContent()).isEmpty();
         then(workRepository).should().findAllWithPagination(eq(pageRequest));
     }
+
+    @DisplayName("특정 작품 조회")
+    @Test
+    void test_getWorkInfo() {
+        long workId = 1L;
+        long totalEpisodes = 12L;
+        ThumbnailImageEntity thumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/work-detail.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "상세 조회용 작품", thumbnailImage);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(episodeRepository.countAllByWork_Id(eq(workId))).willReturn(totalEpisodes);
+
+        WorkInfo actual = workService.getWorkInfo(workId);
+
+        assertThat(actual.id()).isEqualTo(workId);
+        assertThat(actual.thumbnailUrl()).isEqualTo(thumbnailImage.getFileUrl());
+        assertThat(actual.serialState()).isEqualTo(workEntity.getSerialState());
+        assertThat(actual.title()).isEqualTo(workEntity.getTitle());
+        assertThat(actual.description()).isEqualTo(workEntity.getDescription());
+        assertThat(actual.episodeTotalSize()).isEqualTo(totalEpisodes);
+        assertThat(actual.lastUpdateDate()).isEqualTo(workEntity.getModifiedAt().toLocalDate());
+
+        then(workRepository).should().findById(eq(workId));
+        then(episodeRepository).should().countAllByWork_Id(eq(workId));
+    }
+
+    @DisplayName("특정 작품 조회 : 조회 실패")
+    @Test
+    void test_getWorkInfo_fail_when_notFound() {
+        long workId = 999L;
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workService.getWorkInfo(workId))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(workRepository).should().findById(eq(workId));
+        then(episodeRepository).shouldHaveNoInteractions();
+    }
+
 
     private void stubSavedWork(long workId) {
         given(workRepository.save(any(WorkEntity.class)))
