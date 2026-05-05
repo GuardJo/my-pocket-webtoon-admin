@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.WorkApiDocs;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.springframework.data.domain.Page;
@@ -44,5 +45,15 @@ public class WorkManagementController implements WorkApiDocs {
         Page<WorkSummary> workSummaries = workService.getWorkSummaries(pageable);
 
         return BaseResponse.of(HttpStatus.OK, workSummaries);
+    }
+
+    @GetMapping("/{workId}")
+    @Override
+    public BaseResponse<WorkInfo> getWorkInfo(@PathVariable Long workId) {
+        log.info("GET : /api/v1/works/" + workId + ", workId = {}", workId);
+
+        WorkInfo workInfo = workService.getWorkInfo(workId);
+
+        return BaseResponse.of(HttpStatus.OK, workInfo);
     }
 }

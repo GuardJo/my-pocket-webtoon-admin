@@ -1,6 +1,7 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,4 +21,13 @@ public interface WorkService {
      * @return 페이징 처리된 작품 정보 목록
      */
     Page<WorkSummary> getWorkSummaries(Pageable pageable);
+
+    /**
+     * 특정 작품 식별키에 해당하는 작품 정보를 반환한다.
+     *
+     * @param workId 작품 식별키
+     * @return 에피소드 수량을 포함한 작품 정보
+     * @throws jakarta.persistence.EntityNotFoundException 해당하는 작품 정보를 찾지 못했을 경우
+     */
+    WorkInfo getWorkInfo(long workId);
 }

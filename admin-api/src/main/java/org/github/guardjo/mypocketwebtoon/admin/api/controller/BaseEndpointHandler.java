@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
@@ -30,7 +31,7 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
     public BaseResponse<String> handleBadRequest(Exception e) {
         log.error("BadRequest Exception : {}", e.getMessage(), e);
 
-        return badRequestResponse();
+        return BaseResponse.of(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다.");
     }
 
     @ExceptionHandler(
@@ -43,11 +44,15 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
     public BaseResponse<String> handleUnauthorized(Exception e) {
         log.error("Unauthorized Exception : {}", e.getMessage(), e);
 
-        return BaseResponse.<String>builder()
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .statusCode(HttpStatus.UNAUTHORIZED.name())
-                .data("인증 정보가 올바르지 않습니다.")
-                .build();
+        return BaseResponse.of(HttpStatus.UNAUTHORIZED, "인증 정보가 올바르지 않습니다.");
+    }
+
+    @ExceptionHandler(exception = EntityNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public BaseResponse<String> handleNotFoundException(Exception e) {
+        log.error("Not found Exception : {}", e.getMessage(), e);
+
+        return BaseResponse.of(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(WorkUploadException.class)
@@ -63,14 +68,6 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
                                                                   org.springframework.http.HttpHeaders headers,
                                                                   HttpStatusCode status,
                                                                   WebRequest request) {
-        return ResponseEntity.badRequest().body(badRequestResponse());
-    }
-
-    private BaseResponse<String> badRequestResponse() {
-        return BaseResponse.<String>builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .statusCode(HttpStatus.BAD_REQUEST.name())
-                .data("요청 값이 올바르지 않습니다.")
-                .build();
+        return ResponseEntity.badRequest().body(BaseResponse.of(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."));
     }
 }
