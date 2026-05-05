@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.WorkApiDocs;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
@@ -50,10 +51,20 @@ public class WorkManagementController implements WorkApiDocs {
     @GetMapping("/{workId}")
     @Override
     public BaseResponse<WorkInfo> getWorkInfo(@PathVariable Long workId) {
-        log.info("GET : /api/v1/works/" + workId + ", workId = {}", workId);
+        log.info("GET : /api/v1/works/{}, workId = {}", workId, workId);
 
         WorkInfo workInfo = workService.getWorkInfo(workId);
 
         return BaseResponse.of(HttpStatus.OK, workInfo);
+    }
+
+    @GetMapping("/{workId}/episodes")
+    @Override
+    public BaseResponse<Page<EpisodeInfo>> getEpisodes(@PageableDefault(size = 5) Pageable pageable, @PathVariable Long workId) {
+        log.info("GET : /api/v1/works/{}/episodes, workdId = {}, pageNumber = {}, pageSize = {}",
+                workId, workId, pageable.getPageNumber(), pageable.getPageSize());
+
+        // TODO 기능 연동하기
+        return null;
     }
 }
