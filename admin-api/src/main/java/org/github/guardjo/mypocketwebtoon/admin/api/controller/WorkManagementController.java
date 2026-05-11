@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.unit.DataSize;
@@ -40,12 +41,12 @@ public class WorkManagementController implements WorkApiDocs {
 
     @GetMapping
     @Override
-    public BaseResponse<Page<WorkSummary>> getWorks(@PageableDefault(sort = "modifiedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    public BaseResponse<PagedModel<WorkSummary>> getWorks(@PageableDefault(sort = "modifiedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("GET : /api/v1/works, pageNumber = {}, pageSize = {}", pageable.getPageNumber(), pageable.getPageSize());
 
         Page<WorkSummary> workSummaries = workService.getWorkSummaries(pageable);
 
-        return BaseResponse.of(HttpStatus.OK, workSummaries);
+        return BaseResponse.of(HttpStatus.OK, new PagedModel<>(workSummaries));
     }
 
     @GetMapping("/{workId}")
@@ -60,13 +61,13 @@ public class WorkManagementController implements WorkApiDocs {
 
     @GetMapping("/{workId}/episodes")
     @Override
-    public BaseResponse<Page<EpisodeInfo>> getEpisodes(@PageableDefault(size = 5) Pageable pageable,
-                                                       @PathVariable Long workId) {
+    public BaseResponse<PagedModel<EpisodeInfo>> getEpisodes(@PageableDefault(size = 5) Pageable pageable,
+                                                             @PathVariable Long workId) {
         log.info("GET : /api/v1/works/{}/episodes, workdId = {}, pageNumber = {}, pageSize = {}",
                 workId, workId, pageable.getPageNumber(), pageable.getPageSize());
 
         Page<EpisodeInfo> episodeInfos = workService.getEpisodeInfosByWork(workId, pageable);
 
-        return BaseResponse.of(HttpStatus.OK, episodeInfos);
+        return BaseResponse.of(HttpStatus.OK, new PagedModel<>(episodeInfos));
     }
 }

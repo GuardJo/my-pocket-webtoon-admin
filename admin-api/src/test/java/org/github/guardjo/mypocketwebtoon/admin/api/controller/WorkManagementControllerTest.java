@@ -264,7 +264,7 @@ class WorkManagementControllerTest {
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
-        assertThat(actual.getData().totalElements()).isEqualTo(1L);
+        assertThat(actual.getData().page().totalElements()).isEqualTo(1L);
         assertThat(actual.getData().content()).isEqualTo(content);
 
         then(workService).should().getWorkSummaries(eq(pageRequest));
@@ -295,7 +295,7 @@ class WorkManagementControllerTest {
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
-        assertThat(actual.getData().totalElements()).isZero();
+        assertThat(actual.getData().page().totalElements()).isZero();
         assertThat(actual.getData().content()).isEmpty();
 
         then(workService).should().getWorkSummaries(eq(pageRequest));
@@ -387,7 +387,7 @@ class WorkManagementControllerTest {
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
-        assertThat(actual.getData().totalElements()).isEqualTo(episodeInfos.getTotalElements());
+        assertThat(actual.getData().page().totalElements()).isEqualTo(episodeInfos.getTotalElements());
         assertThat(actual.getData().content()).hasSize(episodeInfos.getContent().size());
         EpisodeInfo actualEpisodeInfo = actual.getData().content().get(0);
         EpisodeInfo expectedEpisodeInfo = content.get(0);
@@ -428,6 +428,11 @@ class WorkManagementControllerTest {
 
     private record MockPageResponse<T>(
             List<T> content,
+            MockPageMetadata page
+    ) {
+    }
+
+    private record MockPageMetadata(
             long totalElements
     ) {
     }
