@@ -112,6 +112,7 @@ public class WorkServiceImpl implements WorkService {
         );
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Page<EpisodeInfo> getEpisodeInfosByWork(long workId, Pageable pageable) {
         return episodeRepository.findAllByWorkId(workId, pageable);
