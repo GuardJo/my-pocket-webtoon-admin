@@ -1,6 +1,7 @@
 package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.*;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 
 public class TestDataGenerator {
     private TestDataGenerator() {
@@ -55,6 +56,17 @@ public class TestDataGenerator {
                 .build();
     }
 
+    public static EpisodeEntity episodeEntity(Long id, WorkEntity work, int episodeNo, ThumbnailImageEntity thumbnailImage) {
+        return EpisodeEntity.builder()
+                .id(id)
+                .work(work)
+                .episodeNo(episodeNo)
+                .thumbnailImage(thumbnailImage)
+                .likeCount(0)
+                .viewCount(0)
+                .build();
+    }
+
     public static EpisodeEntity episodeEntity(WorkEntity work, int episodeNo, ThumbnailImageEntity thumbnailImage) {
         return EpisodeEntity.builder()
                 .work(work)
@@ -72,5 +84,18 @@ public class TestDataGenerator {
                 .fileUrl(fileUrl)
                 .fileSize(fileSize)
                 .build();
+    }
+
+    public static EpisodeInfo episodeInfo(EpisodeEntity episode, int episodeImageTotalCount) {
+        ThumbnailImageEntity thumbnailImage = episode.getThumbnailImage();
+
+        return new EpisodeInfo(
+                episode.getId(),
+                episode.getWork().getId(),
+                thumbnailImage == null ? null : thumbnailImage.getFileUrl(),
+                episode.getEpisodeNo(),
+                episodeImageTotalCount,
+                episode.getModifiedAt().toLocalDate()
+        );
     }
 }

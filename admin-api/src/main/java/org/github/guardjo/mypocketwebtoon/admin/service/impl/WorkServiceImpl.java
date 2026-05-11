@@ -12,6 +12,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
@@ -109,6 +110,12 @@ public class WorkServiceImpl implements WorkService {
                 (int) episodeTotalCount,
                 Objects.isNull(workEntity.getModifiedAt()) ? null : workEntity.getModifiedAt().toLocalDate()
         );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<EpisodeInfo> getEpisodeInfosByWork(long workId, Pageable pageable) {
+        return episodeRepository.findAllByWorkId(workId, pageable);
     }
 
     /*

@@ -1,9 +1,10 @@
 package org.github.guardjo.mypocketwebtoon.admin.repository;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
+import org.github.guardjo.mypocketwebtoon.admin.repository.querydsl.EpisodeSearchRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface EpisodeRepository extends JpaRepository<EpisodeEntity, Long> {
+public interface EpisodeRepository extends JpaRepository<EpisodeEntity, Long>, EpisodeSearchRepository {
     /**
      * work_id에 해당하는 episode Entity 의 개수를 반환한다.
      *
