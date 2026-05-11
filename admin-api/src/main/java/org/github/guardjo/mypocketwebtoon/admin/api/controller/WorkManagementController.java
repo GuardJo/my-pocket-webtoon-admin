@@ -60,11 +60,13 @@ public class WorkManagementController implements WorkApiDocs {
 
     @GetMapping("/{workId}/episodes")
     @Override
-    public BaseResponse<Page<EpisodeInfo>> getEpisodes(@PageableDefault(size = 5) Pageable pageable, @PathVariable Long workId) {
+    public BaseResponse<Page<EpisodeInfo>> getEpisodes(@PageableDefault(size = 5) Pageable pageable,
+                                                       @PathVariable Long workId) {
         log.info("GET : /api/v1/works/{}/episodes, workdId = {}, pageNumber = {}, pageSize = {}",
                 workId, workId, pageable.getPageNumber(), pageable.getPageSize());
 
-        // TODO 기능 연동하기
-        return null;
+        Page<EpisodeInfo> episodeInfos = workService.getEpisodeInfosByWork(workId, pageable);
+
+        return BaseResponse.of(HttpStatus.OK, episodeInfos);
     }
 }

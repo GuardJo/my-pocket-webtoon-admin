@@ -10,6 +10,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
@@ -38,6 +39,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -431,6 +433,54 @@ class WorkServiceTest {
         then(episodeRepository).shouldHaveNoInteractions();
     }
 
+    @DisplayName("특정 작품 내 에피소드 정보 목록 조회")
+    @Test
+    void test_getEpisodeInfosByWork() {
+        long workId = 1L;
+        PageRequest pageRequest = PageRequest.of(0, 5);
+        LocalDate lastUpdateDate = LocalDate.now();
+        ThumbnailImageEntity thumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/episode-1.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "에피소드 목록 조회용 작품", thumbnailImage);
+        EpisodeEntity episodeEntity = TestDataGenerator.episodeEntity(1L, workEntity, 1, thumbnailImage);
+        EpisodeInfo episodeInfo = new EpisodeInfo(
+                episodeEntity.getId(),
+                workId,
+                thumbnailImage.getFileUrl(),
+                episodeEntity.getEpisodeNo(),
+                12,
+                lastUpdateDate
+        );
+        Page<EpisodeInfo> expected = new PageImpl<>(List.of(episodeInfo), pageRequest, 1);
+
+        given(episodeRepository.findAllByWorkId(eq(workId), eq(pageRequest))).willReturn(expected);
+
+        Page<EpisodeInfo> actual = workService.getEpisodeInfosByWork(workId, pageRequest);
+
+        assertThat(actual).isSameAs(expected);
+        assertThat(actual.getTotalElements()).isEqualTo(1);
+        assertThat(actual.getContent()).containsExactly(episodeInfo);
+        assertThat(actual.getContent().get(0).workId()).isEqualTo(workId);
+        assertThat(actual.getContent().get(0).episodeThumbnailUrl()).isEqualTo(thumbnailImage.getFileUrl());
+        assertThat(actual.getContent().get(0).episodeNo()).isEqualTo(episodeEntity.getEpisodeNo());
+        then(episodeRepository).should().findAllByWorkId(eq(workId), eq(pageRequest));
+    }
+
+    @DisplayName("특정 작품 내 에피소드 정보 목록 조회 : 조회 실패")
+    @Test
+    void test_getEpisodeInfosByWork_not_found() {
+        long workId = 999L;
+        PageRequest pageRequest = PageRequest.of(0, 5);
+        Page<EpisodeInfo> expected = Page.empty(pageRequest);
+
+        given(episodeRepository.findAllByWorkId(eq(workId), eq(pageRequest))).willReturn(expected);
+
+        Page<EpisodeInfo> actual = workService.getEpisodeInfosByWork(workId, pageRequest);
+
+        assertThat(actual).isSameAs(expected);
+        assertThat(actual.getTotalElements()).isZero();
+        assertThat(actual.getContent()).isEmpty();
+        then(episodeRepository).should().findAllByWorkId(eq(workId), eq(pageRequest));
+    }
 
     private void stubSavedWork(long workId) {
         given(workRepository.save(any(WorkEntity.class)))

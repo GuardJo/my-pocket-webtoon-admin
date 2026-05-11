@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.model.vo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /*
@@ -26,6 +27,9 @@ public record EpisodeInfo(
 
         @JsonFormat(pattern = "yyyy.MM.dd")
         @Schema(description = "최근 업데이트 일자", example = "2026.05.05")
-        LocalDateTime lastUpdateDate
+        LocalDate lastUpdateDate
 ) {
+    public EpisodeInfo(Long id, Long workId, String episodeThumbnailUrl, int episodeNo, int episodeImageTotalCount, LocalDateTime lastUpdateDateTime) {
+        this(id, workId, episodeThumbnailUrl, episodeNo, episodeImageTotalCount, lastUpdateDateTime.toLocalDate());
+    }
 }

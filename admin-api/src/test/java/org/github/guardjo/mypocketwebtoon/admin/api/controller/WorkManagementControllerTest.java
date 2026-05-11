@@ -5,11 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.github.guardjo.mypocketwebtoon.admin.config.StaticResourceConfig;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
+import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -252,10 +257,10 @@ class WorkManagementControllerTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         JavaType pageResponseType = objectMapper.getTypeFactory()
-                .constructParametricType(WorkSummaryPageResponse.class, WorkSummary.class);
+                .constructParametricType(MockPageResponse.class, WorkSummary.class);
         JavaType baseResponseType = objectMapper.getTypeFactory()
                 .constructParametricType(BaseResponse.class, pageResponseType);
-        BaseResponse<WorkSummaryPageResponse<WorkSummary>> actual = objectMapper.readValue(response, baseResponseType);
+        BaseResponse<MockPageResponse<WorkSummary>> actual = objectMapper.readValue(response, baseResponseType);
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
@@ -283,10 +288,10 @@ class WorkManagementControllerTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         JavaType pageResponseType = objectMapper.getTypeFactory()
-                .constructParametricType(WorkSummaryPageResponse.class, WorkSummary.class);
+                .constructParametricType(MockPageResponse.class, WorkSummary.class);
         JavaType baseResponseType = objectMapper.getTypeFactory()
                 .constructParametricType(BaseResponse.class, pageResponseType);
-        BaseResponse<WorkSummaryPageResponse<WorkSummary>> actual = objectMapper.readValue(response, baseResponseType);
+        BaseResponse<MockPageResponse<WorkSummary>> actual = objectMapper.readValue(response, baseResponseType);
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
@@ -352,6 +357,57 @@ class WorkManagementControllerTest {
         then(workService).should().getWorkInfo(eq(workId));
     }
 
+    @DisplayName("GET : /api/v1/works/{workId}/episodes")
+    @Test
+    void test_getEpisodes() throws Exception {
+        long workId = 1L;
+        PageRequest pageRequest = PageRequest.of(0, 5);
+        ThumbnailImageEntity thumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/episode-1.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "에피소드 목록 조회용 작품", thumbnailImage);
+        EpisodeEntity episodeEntity = TestDataGenerator.episodeEntity(10L, workEntity, 1, thumbnailImage);
+        List<EpisodeInfo> content = List.of(TestDataGenerator.episodeInfo(episodeEntity, 12));
+        Page<EpisodeInfo> episodeInfos = new PageImpl<>(content, pageRequest, 1);
+
+        given(workService.getEpisodeInfosByWork(eq(workId), eq(pageRequest))).willReturn(episodeInfos);
+
+        String response = mockMvc.perform(get("/api/v1/works/{workId}/episodes", workId)
+                        .param("page", String.valueOf(pageRequest.getPageNumber()))
+                        .param("size", String.valueOf(pageRequest.getPageSize())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType pageResponseType = objectMapper.getTypeFactory()
+                .constructParametricType(MockPageResponse.class, EpisodeInfo.class);
+        JavaType baseResponseType = objectMapper.getTypeFactory()
+                .constructParametricType(BaseResponse.class, pageResponseType);
+        BaseResponse<MockPageResponse<EpisodeInfo>> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
+        assertThat(actual.getData().totalElements()).isEqualTo(episodeInfos.getTotalElements());
+        assertThat(actual.getData().content()).hasSize(episodeInfos.getContent().size());
+        EpisodeInfo actualEpisodeInfo = actual.getData().content().get(0);
+        EpisodeInfo expectedEpisodeInfo = content.get(0);
+        assertThat(actualEpisodeInfo).usingRecursiveComparison().isEqualTo(expectedEpisodeInfo);
+
+        then(workService).should().getEpisodeInfosByWork(eq(workId), eq(pageRequest));
+    }
+
+    @DisplayName("GET : /api/v1/works/{workId}/episodes - 올바르지 않은 파라미터")
+    @Test
+    void test_getEpisodes_bad_request() throws Exception {
+        String invalidWorkId = "invalid";
+
+        mockMvc.perform(get("/api/v1/works/{workId}/episodes", invalidWorkId))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        then(workService).should(never()).getEpisodeInfosByWork(any(Long.class), any());
+    }
+
     private MockMultipartFile mockThumbnailFile() {
         return new MockMultipartFile(
                 "thumbnailFile",
@@ -370,7 +426,7 @@ class WorkManagementControllerTest {
         );
     }
 
-    private record WorkSummaryPageResponse<T>(
+    private record MockPageResponse<T>(
             List<T> content,
             long totalElements
     ) {

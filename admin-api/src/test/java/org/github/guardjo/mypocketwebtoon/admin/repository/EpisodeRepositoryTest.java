@@ -144,7 +144,7 @@ class EpisodeRepositoryTest {
             assertThat(actual.episodeThumbnailUrl()).isEqualTo(expected.getThumbnailImage().getFileUrl());
             assertThat(actual.episodeNo()).isEqualTo(expected.getEpisodeNo());
             assertThat(actual.episodeImageTotalCount()).isEqualTo(episodeCount);
-            assertThat(actual.lastUpdateDate()).isEqualTo(expected.getModifiedAt());
+            assertThat(actual.lastUpdateDate()).isEqualTo(expected.getModifiedAt().toLocalDate());
         }
     }
 
