@@ -152,8 +152,8 @@ public class R2StorageUploader extends AbstractStorageUploader {
     업로드 디렉터리 경로 구성
      */
     private Path generateTargetDirectory(String directory) {
-        String normaizedDirectory = normalizeDirectory(directory);
-        Path targetDirectory = Paths.get(normaizedDirectory).normalize();
+        String normalizedDirectory = normalizeDirectory(directory);
+        Path targetDirectory = Paths.get(normalizedDirectory).normalize();
 
         if (!targetDirectory.startsWith(targetDirectory)) {
             throw new IllegalArgumentException("업로드 디렉터리 경로가 올바르지 않습니다.");

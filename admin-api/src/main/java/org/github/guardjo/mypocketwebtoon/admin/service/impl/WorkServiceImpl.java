@@ -118,6 +118,11 @@ public class WorkServiceImpl implements WorkService {
         return episodeRepository.findAllByWorkId(workId, pageable);
     }
 
+    @Override
+    public void clearWorkData(long workId) {
+        // TODO 기능 구현
+    }
+
     /*
     작품 썸네일 데이터 및 파일 저장
      */

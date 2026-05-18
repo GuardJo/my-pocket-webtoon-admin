@@ -40,4 +40,11 @@ public interface WorkService {
      * @return 페이징 처리된 작품 내 에피소드 정보 목록
      */
     Page<EpisodeInfo> getEpisodeInfosByWork(long workId, Pageable pageable);
+
+    /**
+     * 주어진 작품 식별키에 해당하는 관련 데이터들을 제거한다.
+     *
+     * @param workId 작품 식별키
+     */
+    void clearWorkData(long workId);
 }
