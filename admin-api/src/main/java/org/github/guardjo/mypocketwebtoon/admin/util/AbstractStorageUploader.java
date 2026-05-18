@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.util;
 
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -7,6 +8,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 public abstract class AbstractStorageUploader implements FileStorageUploader {
+    @Override
+    public void delete(String filePath) {
+        StoredFile removingFile = generateRemovingFile(filePath);
+        delete(removingFile);
+    }
+
     /**
      * 파일 검증
      */
@@ -76,4 +83,12 @@ public abstract class AbstractStorageUploader implements FileStorageUploader {
             throw new IllegalArgumentException("저장할 파일 내용이 비어 있습니다.");
         }
     }
+
+    /**
+     * 삭제 처리할 StoredFile 정보를 구성하여 반환한다.
+     *
+     * @param fileUrl 파일 저장 경로
+     * @return 삭제할 StoredFile
+     */
+    abstract StoredFile generateRemovingFile(String fileUrl);
 }

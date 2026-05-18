@@ -108,9 +108,6 @@ class FileStorageUploaderTest {
         @DisplayName("디렉터리 경로가 올바르지 않으면 예외가 발생한다")
         @Test
         void test_upload_fail_when_directory_is_invalid() {
-            LocalStorageUploader uploader = new LocalStorageUploader(
-                    new LocalStorageProperties(tempDir.toString(), UPLOAD_URL_PREFIX, null)
-            );
             MockMultipartFile file = new MockMultipartFile(
                     "file",
                     "episode.zip",
@@ -118,11 +115,11 @@ class FileStorageUploaderTest {
                     "zip-content".getBytes()
             );
 
-            assertThatThrownBy(() -> uploader.upload(file, "../outside"))
+            assertThatThrownBy(() -> fileStorageUploader.upload(file, "../outside"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 경로를 포함한 디렉터리는 사용할 수 없습니다.");
 
-            assertThatThrownBy(() -> uploader.upload("file".getBytes(), "../outside.jpg", "episodes"))
+            assertThatThrownBy(() -> fileStorageUploader.upload("file".getBytes(), "../outside.jpg", "episodes"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("업로드 파일명이 올바르지 않습니다.");
         }
@@ -130,6 +127,24 @@ class FileStorageUploaderTest {
         @DisplayName("저장된 파일 삭제 요청 시 로컬 스토리지에서 파일을 제거한다")
         @Test
         void test_delete_success() {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "thumbnail.png",
+                    "image/png",
+                    "thumbnail-content".getBytes()
+            );
+
+            StoredFile storedFile = fileStorageUploader.upload(file, "thumbnails");
+            Path savedFile = Path.of(storedFile.absolutePath());
+
+            fileStorageUploader.delete(storedFile);
+
+            assertThat(savedFile).doesNotExist();
+        }
+
+        @DisplayName("저장된 파일 경로 요청 시 로컬 스토리지에서 파일을 제거한다.")
+        @Test
+        void test_delete_file_path_success() {
             LocalStorageUploader uploader = new LocalStorageUploader(
                     new LocalStorageProperties(tempDir.toString(), UPLOAD_URL_PREFIX, null)
             );
@@ -141,10 +156,11 @@ class FileStorageUploaderTest {
             );
 
             StoredFile storedFile = uploader.upload(file, "thumbnails");
-            Path savedFile = Path.of(storedFile.absolutePath());
+            String filePath = storedFile.storedFilename();
 
-            uploader.delete(storedFile);
+            fileStorageUploader.delete(filePath);
 
+            Path savedFile = Path.of(filePath);
             assertThat(savedFile).doesNotExist();
         }
     }
@@ -293,5 +309,25 @@ class FileStorageUploaderTest {
             assertThat(request.key()).isEqualTo(storedFile.storedFilename());
         }
 
+        @DisplayName("저장된 파일 경로 요청 시 R2 스토리지에서 파일을 제거한다")
+        @Test
+        void test_delete_file_path_success() {
+            StoredFile storedFile = new StoredFile(
+                    "thumbnail.png",
+                    "thumbnails/stored-thumbnail.png",
+                    BUCKET_NAME + "/thumbnails/stored-thumbnail.png",
+                    PUBLIC_BASE_URL + "/" + BUCKET_NAME + "/thumbnails/stored-thumbnail.png",
+                    100L
+            );
+
+            fileStorageUploader.delete(storedFile.storedFilename());
+
+            var requestCaptor = org.mockito.ArgumentCaptor.forClass(DeleteObjectRequest.class);
+            verify(r2Client).deleteObject(requestCaptor.capture());
+
+            DeleteObjectRequest request = requestCaptor.getValue();
+            assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
+            assertThat(request.key()).isEqualTo(storedFile.storedFilename());
+        }
     }
 }

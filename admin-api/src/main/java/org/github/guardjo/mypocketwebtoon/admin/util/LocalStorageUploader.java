@@ -21,7 +21,7 @@ public class LocalStorageUploader extends AbstractStorageUploader {
     public StoredFile upload(MultipartFile file, String directory) {
         validateFile(file);
 
-        Path rootPath = Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
+        Path rootPath = getRootPath();
         String normalizedDirectory = normalizeDirectory(directory);
         Path targetDirectory = rootPath.resolve(normalizedDirectory).normalize();
 
@@ -55,7 +55,7 @@ public class LocalStorageUploader extends AbstractStorageUploader {
     public StoredFile upload(byte[] content, String originalFilename, String directory) {
         validateContent(content);
 
-        Path rootPath = Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
+        Path rootPath = getRootPath();
         String normalizedDirectory = normalizeDirectory(directory);
         Path targetDirectory = rootPath.resolve(normalizedDirectory).normalize();
 
@@ -101,9 +101,17 @@ public class LocalStorageUploader extends AbstractStorageUploader {
         }
     }
 
+    @Override
+    StoredFile generateRemovingFile(String fileUrl) {
+        Path rootPath = getRootPath();
+        String absolutePath = rootPath.resolve(fileUrl).normalize().toString();
+
+        return new StoredFile(null, null, absolutePath, null, 0);
+    }
+
     /*
     저장된 파일에 대한 외부 접근 url 구성
-     */
+    */
     private String buildPublicUrl(String directory, String storedFilename) {
         StringBuilder pathBuilder = new StringBuilder(localStorageProperties.urlPrefix());
         if (!localStorageProperties.urlPrefix().endsWith("/")) {
@@ -119,5 +127,12 @@ public class LocalStorageUploader extends AbstractStorageUploader {
             return resourcePath;
         }
         return localStorageProperties.publicBaseUrl().replaceAll("/+$", "") + resourcePath;
+    }
+
+    /*
+    루트 경로 반환
+     */
+    private Path getRootPath() {
+        return Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
     }
 }

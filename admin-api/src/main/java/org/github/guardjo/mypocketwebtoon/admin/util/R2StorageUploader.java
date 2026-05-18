@@ -106,9 +106,16 @@ public class R2StorageUploader extends AbstractStorageUploader {
         log.debug("Deleted storedName = {}", file.storedFilename());
     }
 
+    @Override
+    StoredFile generateRemovingFile(String fileUrl) {
+        String objectKey = fileUrl.replace(publicBaseUrl + "/", "");
+
+        return new StoredFile(null, objectKey, objectKey, publicBaseUrl, 0);
+    }
+
     /*
-    R2 스토리지 업로드 요청 객체 생성
-     */
+        R2 스토리지 업로드 요청 객체 생성
+         */
     private PutObjectRequest generatePutObjectRequest(MultipartFile file, String directory) {
         Path targetDirectory = generateTargetDirectory(directory);
 
