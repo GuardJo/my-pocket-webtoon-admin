@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,6 +99,34 @@ class EpisodeImageRepositoryTest {
         Optional<EpisodeImageEntity> actual = episodeImageRepository.findById(savedEpisodeImage.getId());
 
         assertThat(actual.isEmpty()).isTrue();
+    }
+
+    @DisplayName("에피소드 식별키에 해당하는 episolde_image Entity 삭제")
+    @Test
+    void test_deleteAllByEpisodeIdIn() {
+        EpisodeEntity savedEpisode = saveEpisode(
+                "에피소드 이미지 삭제용 작품",
+                "https://cdn.example.com/thumbnail/work-episode-image-delete.png",
+                1,
+                "https://cdn.example.com/thumbnail/episode-image-delete.png"
+        );
+        List<EpisodeImageEntity> expected = episodeImageRepository.saveAllAndFlush(
+                List.of(
+                        TestDataGenerator.episodeImage(savedEpisode, 1, "https://cdn.example.com/episode/image-1.png", 1024),
+                        TestDataGenerator.episodeImage(savedEpisode, 2, "https://cdn.example.com/episode/image-2.png", 1024),
+                        TestDataGenerator.episodeImage(savedEpisode, 3, "https://cdn.example.com/episode/image-3.png", 1024)
+                )
+        );
+
+        long episodeId = savedEpisode.getId();
+
+        long actual = episodeImageRepository.deleteAllByEpisodeIdIn(List.of(episodeId));
+        episodeImageRepository.flush();
+
+        long totalCount = episodeImageRepository.count();
+
+        assertThat(actual).isEqualTo(expected.size());
+        assertThat(totalCount).isEqualTo(0);
     }
 
     private EpisodeEntity saveEpisode(String title, String workThumbnailUrl, int episodeNo, String episodeThumbnailUrl) {

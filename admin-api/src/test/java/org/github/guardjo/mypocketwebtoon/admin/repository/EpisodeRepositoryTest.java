@@ -148,6 +148,33 @@ class EpisodeRepositoryTest {
         }
     }
 
+    @DisplayName("work_id에 해당하는 episode Entity 목록 반환")
+    @Test
+    void test_findAllByWork_Id() {
+        WorkEntity savedWork = saveWork("에피소드 저장용 작품", "https://cdn.example.com/thumbnail/work-episode.png");
+        WorkEntity savedWork2 = saveWork("에피소드 저장용 작품2", "https://cdn.example.com/thumbnail/work-episode2.png");
+
+        List<EpisodeEntity> expected = List.of(
+                TestDataGenerator.episodeEntity(savedWork, 1, saveThumbnailImage("https://cdn.example.com/thumbnail/episode1.png")),
+                TestDataGenerator.episodeEntity(savedWork, 2, saveThumbnailImage("https://cdn.example.com/thumbnail/episode2.png")),
+                TestDataGenerator.episodeEntity(savedWork, 3, saveThumbnailImage("https://cdn.example.com/thumbnail/episode3.png"))
+        );
+
+        List<EpisodeEntity> savedEpisodes = List.of(
+                TestDataGenerator.episodeEntity(savedWork2, 1, saveThumbnailImage("https://cdn.example.com/thumbnail/episode11.png")),
+                TestDataGenerator.episodeEntity(savedWork2, 2, saveThumbnailImage("https://cdn.example.com/thumbnail/episode22.png")),
+                TestDataGenerator.episodeEntity(savedWork2, 3, saveThumbnailImage("https://cdn.example.com/thumbnail/episode33.png"))
+        );
+
+
+        episodeRepository.saveAllAndFlush(expected);
+        episodeRepository.saveAllAndFlush(savedEpisodes);
+
+        List<EpisodeEntity> actual = episodeRepository.findAllByWork_Id(savedWork.getId());
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private WorkEntity saveWork(String title, String thumbnailUrl) {
         ThumbnailImageEntity savedThumbnail = saveThumbnailImage(thumbnailUrl);
         return workRepository.saveAndFlush(TestDataGenerator.workEntity(title, savedThumbnail));
