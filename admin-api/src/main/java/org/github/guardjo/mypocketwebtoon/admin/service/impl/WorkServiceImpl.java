@@ -190,7 +190,7 @@ public class WorkServiceImpl implements WorkService {
         Path targetPath = Path.of(WORKS_DIRECTORY, Long.toString(workId));
 
         log.info("Deleting episode image files, path = {}", targetPath);
-        fileStorageUploader.delete(targetPath.toString());
+        fileStorageUploader.delete(targetPath + "/");
         log.info("Deleted episode image files, path = {}", targetPath);
     }
 

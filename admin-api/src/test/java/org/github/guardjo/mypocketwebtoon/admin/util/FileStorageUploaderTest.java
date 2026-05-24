@@ -8,19 +8,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 class FileStorageUploaderTest {
@@ -328,6 +330,38 @@ class FileStorageUploaderTest {
             DeleteObjectRequest request = requestCaptor.getValue();
             assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
             assertThat(request.key()).isEqualTo(storedFile.storedFilename());
+        }
+
+        @DisplayName("저장된 파일의 상위 디렉터리 기반 하위 파일들을 R2 스토리지에서 제거한다")
+        @Test
+        void test_delete_directory_path_success() {
+            StoredFile storedFile = new StoredFile(
+                    null,
+                    "works/999/",
+                    null,
+                    null,
+                    0
+            );
+            ArgumentCaptor<ListObjectsV2Request> listRequestCaptor = org.mockito.ArgumentCaptor.forClass(ListObjectsV2Request.class);
+            ArgumentCaptor<DeleteObjectsRequest> requestCaptor = org.mockito.ArgumentCaptor.forClass(DeleteObjectsRequest.class);
+
+            given(r2Client.listObjectsV2(listRequestCaptor.capture())).willReturn(ListObjectsV2Response.builder()
+                    .prefix(storedFile.storedFilename())
+                    .contents(List.of(S3Object.builder()
+                            .size(1024L)
+                            .key("test-key")
+                            .build()))
+                    .build());
+            given(r2Client.deleteObjects(requestCaptor.capture())).willReturn(mock(DeleteObjectsResponse.class));
+
+            fileStorageUploader.delete(storedFile.storedFilename());
+
+            ListObjectsV2Request listRequest = listRequestCaptor.getValue();
+            assertThat(listRequest.bucket()).isEqualTo(BUCKET_NAME);
+            assertThat(listRequest.prefix()).isEqualTo(storedFile.storedFilename());
+
+            DeleteObjectsRequest request = requestCaptor.getValue();
+            assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
         }
     }
 }

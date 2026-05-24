@@ -12,8 +12,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,6 +20,7 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -96,14 +96,41 @@ public class R2StorageUploader extends AbstractStorageUploader {
 
         log.debug("Delete file, storedName = {}", objectKey);
 
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                .bucket(bucketName)
-                .key(objectKey)
-                .build();
+        if (objectKey.endsWith("/")) {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(objectKey)
+                    .build();
+            ListObjectsV2Response listResponse = r2Client.listObjectsV2(listRequest);
 
-        r2Client.deleteObject(deleteObjectRequest);
+            List<ObjectIdentifier> deleteObjects = listResponse.contents().stream()
+                    .map(res -> {
+                        return ObjectIdentifier.builder()
+                                .key(res.key())
+                                .build();
+                    })
+                    .toList();
 
-        log.debug("Deleted storedName = {}", file.storedFilename());
+            if (!deleteObjects.isEmpty()) {
+                DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                        .bucket(bucketName)
+                        .delete(Delete.builder()
+                                .objects(deleteObjects)
+                                .build())
+                        .build();
+
+                r2Client.deleteObjects(deleteObjectsRequest);
+            }
+        } else {
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .build();
+
+            r2Client.deleteObject(deleteObjectRequest);
+        }
+
+        log.debug("Deleted storedName = {}", objectKey);
     }
 
     @Override

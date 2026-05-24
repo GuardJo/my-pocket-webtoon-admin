@@ -505,10 +505,10 @@ class WorkServiceTest {
         then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
         then(fileStorageUploader).should().delete(eq(episodeThumbnail1.getFileUrl()));
         then(fileStorageUploader).should().delete(eq(episodeThumbnail2.getFileUrl()));
-        then(fileStorageUploader).should().delete(eq("works/" + workId));
+        then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
         then(thumbnailImageRepository).should(times(episodes.size() + 1)).delete(thumbnailCaptor.capture());
         then(episodeImageRepository).should().deleteAllByEpisodeIdIn(eq(List.of(episode1.getId(), episode2.getId())));
-        then(episodeRepository).should().deleteAll(episodeCaptor.capture());
+        then(episodeRepository).should().deleteAllInBatch(episodeCaptor.capture());
         then(workRepository).should().delete(eq(workEntity));
 
         assertThat(thumbnailCaptor.getAllValues()).containsExactly(episodeThumbnail1, episodeThumbnail2, workThumbnail);
@@ -548,10 +548,10 @@ class WorkServiceTest {
         then(workRepository).should().findById(eq(workId));
         then(thumbnailImageRepository).should().delete(eq(workThumbnail));
         then(episodeImageRepository).shouldHaveNoInteractions();
-        then(episodeRepository).should().deleteAll(episodeCaptor.capture());
+        then(episodeRepository).should().deleteAllInBatch(episodeCaptor.capture());
         then(workRepository).should().delete(eq(workEntity));
         then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
-        then(fileStorageUploader).should().delete(eq("works/" + workId));
+        then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
 
         assertThat(toList((Iterable<EpisodeEntity>) episodeCaptor.getValue())).isEmpty();
     }
@@ -568,7 +568,7 @@ class WorkServiceTest {
         given(episodeRepository.findAllByWork_Id(eq(workId))).willReturn(List.of(episode));
         willAnswer(invocation -> {
             String filePath = invocation.getArgument(0, String.class);
-            if (("works/" + workId).equals(filePath)) {
+            if (("works/" + workId + "/").equals(filePath)) {
                 throw new IllegalStateException("storage delete failed");
             }
             return null;
@@ -579,10 +579,10 @@ class WorkServiceTest {
 
         then(workRepository).should().findById(eq(workId));
         then(episodeImageRepository).should().deleteAllByEpisodeIdIn(anyList());
-        then(episodeRepository).should().deleteAll(anyIterable());
+        then(episodeRepository).should().deleteAllInBatch(anyIterable());
         then(workRepository).should().delete(any(WorkEntity.class));
         then(fileStorageUploader).should().delete(eq(episodeThumbnail.getFileUrl()));
-        then(fileStorageUploader).should().delete(eq("works/" + workId));
+        then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
         then(thumbnailImageRepository).should().delete(eq(episodeThumbnail));
     }
 
