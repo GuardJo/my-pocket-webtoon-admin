@@ -14,6 +14,7 @@ import org.github.guardjo.mypocketwebtoon.admin.security.JwtProvider;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,6 +29,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.nio.charset.StandardCharsets;
@@ -51,6 +53,8 @@ public class SecurityConfig {
                                     "/swagger-ui.html",
                                     "/swagger-resources/**",
                                     localStorageProperties.urlPrefix() + "/**").permitAll()
+                            .requestMatchers(HttpMethod.DELETE, "/api/v1/works/**")
+                            .hasAnyRole("MASTER", "ADMIN")
                             .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                             .anyRequest().authenticated();
                 })
@@ -58,7 +62,10 @@ public class SecurityConfig {
                 .httpBasic(HttpBasicConfigurer::disable)
                 .csrf(CsrfConfigurer::disable)
                 .formLogin(FormLoginConfigurer::disable)
-                .exceptionHandling(customizer -> customizer.authenticationEntryPoint(authenticationEntryPoint()))
+                .exceptionHandling(customizer -> {
+                    customizer.authenticationEntryPoint(authenticationEntryPoint());
+                    customizer.accessDeniedHandler(accessDeniedHandler());
+                })
                 .addFilterBefore(new JwtAuthenticationFilter(userDetailsService(), jwtProvider), UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();
@@ -87,6 +94,19 @@ public class SecurityConfig {
 
             response.getWriter().write(objectMapper.writeValueAsString(baseResponse));
         };
+    }
+
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return ((request, response, accessDeniedException) -> {
+            BaseResponse<String> baseResponse = BaseResponse.of(HttpStatus.FORBIDDEN, "해당 권한이 없습니다.");
+
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+            response.getWriter().write(objectMapper.writeValueAsString(baseResponse));
+        });
     }
 
     @Bean
