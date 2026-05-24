@@ -511,7 +511,7 @@ class WorkServiceTest {
         then(episodeRepository).should().deleteAll(episodeCaptor.capture());
         then(workRepository).should().delete(eq(workEntity));
 
-        assertThat(thumbnailCaptor.getAllValues()).containsExactly(workThumbnail, episodeThumbnail1, episodeThumbnail2);
+        assertThat(thumbnailCaptor.getAllValues()).containsExactly(episodeThumbnail1, episodeThumbnail2, workThumbnail);
         assertThat(toList((Iterable<EpisodeEntity>) episodeCaptor.getValue())).containsExactlyElementsOf(episodes);
     }
 
@@ -546,12 +546,12 @@ class WorkServiceTest {
         workService.clearWorkData(workId);
 
         then(workRepository).should().findById(eq(workId));
-        then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
-        then(fileStorageUploader).should(never()).delete(eq("works/" + workId));
         then(thumbnailImageRepository).should().delete(eq(workThumbnail));
         then(episodeImageRepository).shouldHaveNoInteractions();
         then(episodeRepository).should().deleteAll(episodeCaptor.capture());
         then(workRepository).should().delete(eq(workEntity));
+        then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
+        then(fileStorageUploader).should().delete(eq("works/" + workId));
 
         assertThat(toList((Iterable<EpisodeEntity>) episodeCaptor.getValue())).isEmpty();
     }
@@ -578,12 +578,12 @@ class WorkServiceTest {
                 .isInstanceOf(IllegalStateException.class);
 
         then(workRepository).should().findById(eq(workId));
+        then(episodeImageRepository).should().deleteAllByEpisodeIdIn(anyList());
+        then(episodeRepository).should().deleteAll(anyIterable());
+        then(workRepository).should().delete(any(WorkEntity.class));
         then(fileStorageUploader).should().delete(eq(episodeThumbnail.getFileUrl()));
         then(fileStorageUploader).should().delete(eq("works/" + workId));
         then(thumbnailImageRepository).should().delete(eq(episodeThumbnail));
-        then(episodeImageRepository).should(never()).deleteAllByEpisodeIdIn(anyList());
-        then(episodeRepository).should(never()).deleteAll(anyIterable());
-        then(workRepository).should(never()).delete(any(WorkEntity.class));
     }
 
     private void stubSavedWork(long workId) {

@@ -123,14 +123,16 @@ public class WorkServiceImpl implements WorkService {
         // 삭제할 작품 Entity 조회
         WorkEntity workEntity = findWorkEntity(workId);
 
-        // 작품 썸네일 삭제
-        deleteThumbnailImage(workEntity.getThumbnailImage());
-
         // 작품 에피소드 삭제
         deleteEpisodes(workId);
 
         // 작품 정보 삭제
+        deleteThumbnailImage(workEntity.getThumbnailImage());
+
         workRepository.delete(workEntity);
+
+        // 스토리지 내 작품 하위 파일 제거
+        clearEpisodeImageFiles(workId);
         log.info("Deleted work, workId = {}", workId);
     }
 
@@ -139,8 +141,8 @@ public class WorkServiceImpl implements WorkService {
      */
     private void deleteThumbnailImage(ThumbnailImageEntity thumbnailImage) {
         if (Objects.nonNull(thumbnailImage)) {
-            fileStorageUploader.delete(thumbnailImage.getFileUrl());
             thumbnailImageRepository.delete(thumbnailImage);
+            fileStorageUploader.delete(thumbnailImage.getFileUrl());
             log.debug("Deleted thumbnail_image, id = {}", thumbnailImage.getId());
         }
     }
@@ -152,8 +154,15 @@ public class WorkServiceImpl implements WorkService {
         log.info("Deleting episodes, workId = {}", workId);
 
         List<EpisodeEntity> episodeEntityList = episodeRepository.findAllByWork_Id(workId);
-        deleteEpisodeImages(episodeEntityList, workId);
-        episodeRepository.deleteAll(episodeEntityList);
+        List<Long> episodeIds = episodeEntityList.stream().map(EpisodeEntity::getId).toList();
+        deleteEpisodeImages(episodeIds, workId);
+        episodeRepository.deleteAllInBatch(episodeEntityList);
+
+        // 에피소드 별 썸네일 데이터 삭제
+        for (EpisodeEntity episodeEntity : episodeEntityList) {
+            ThumbnailImageEntity thumbnailImage = episodeEntity.getThumbnailImage();
+            deleteThumbnailImage(thumbnailImage);
+        }
 
         log.info("Deleted episodes, workId = {}, deletedRows = {}", workId, episodeEntityList.size());
     }
@@ -161,28 +170,16 @@ public class WorkServiceImpl implements WorkService {
     /*
     에피소드 별 이미지 파일 삭제
      */
-    private void deleteEpisodeImages(List<EpisodeEntity> episodeEntityList, long workId) {
-        if (episodeEntityList.isEmpty()) {
+    private void deleteEpisodeImages(List<Long> episodeIds, long workId) {
+        if (episodeIds.isEmpty()) {
             log.warn("No episodes found for workId = {}", workId);
         } else {
-            log.info("Deleting episode_images, episodeCount = {}", episodeEntityList.size());
-
-            List<Long> episodeIds = new ArrayList<>(episodeEntityList.size());
-
-            for (EpisodeEntity episodeEntity : episodeEntityList) {
-                ThumbnailImageEntity thumbnailImage = episodeEntity.getThumbnailImage();
-                deleteThumbnailImage(thumbnailImage);
-
-                episodeIds.add(episodeEntity.getId());
-            }
-
-            // 스토리지 내 작품 하위 데이터 제거
-            clearEpisodeImageFiles(workId);
+            log.info("Deleting episode_images, episodeCount = {}", episodeIds.size());
 
             // 에피소드 이미지 메타데이터 제거
             long deletedRows = episodeImageRepository.deleteAllByEpisodeIdIn(episodeIds);
 
-            log.info("Deleted episode_images, episodeCount = {}, deletedRows = {}", episodeEntityList.size(), deletedRows);
+            log.info("Deleted episode_images, episodeCount = {}, deletedRows = {}", episodeIds.size(), deletedRows);
         }
     }
 

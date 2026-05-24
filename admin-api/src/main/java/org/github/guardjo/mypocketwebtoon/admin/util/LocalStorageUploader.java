@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.LocalStorageProperties;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -95,7 +96,11 @@ public class LocalStorageUploader extends AbstractStorageUploader {
 
         Path targetFile = Paths.get(file.absolutePath()).toAbsolutePath().normalize();
         try {
-            Files.deleteIfExists(targetFile);
+            if (Files.isDirectory(targetFile)) {
+                FileSystemUtils.deleteRecursively(targetFile);
+            } else {
+                Files.deleteIfExists(targetFile);
+            }
         } catch (IOException e) {
             throw new WorkFileStorageException("로컬 스토리지에서 파일을 삭제하지 못했습니다.", e);
         }
@@ -103,8 +108,10 @@ public class LocalStorageUploader extends AbstractStorageUploader {
 
     @Override
     StoredFile generateRemovingFile(String fileUrl) {
+        fileUrl = fileUrl.replace(localStorageProperties.publicBaseUrl(), "")
+                .replace(localStorageProperties.urlPrefix(), "");
         Path rootPath = getRootPath();
-        String absolutePath = rootPath.resolve(fileUrl).normalize().toString();
+        String absolutePath = rootPath.resolve(normalizeDirectory(fileUrl)).normalize().toString();
 
         return new StoredFile(null, null, absolutePath, null, 0);
     }
