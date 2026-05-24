@@ -32,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -93,11 +94,7 @@ public class WorkServiceImpl implements WorkService {
     @Transactional(readOnly = true)
     @Override
     public WorkInfo getWorkInfo(long workId) {
-        WorkEntity workEntity = workRepository.findById(workId)
-                .orElseThrow(() -> {
-                    log.warn("Not found workEntity, workId = {}", workId);
-                    return new EntityNotFoundException("작품을 찾을 수 없습니다");
-                });
+        WorkEntity workEntity = findWorkEntity(workId);
 
         long episodeTotalCount = episodeRepository.countAllByWork_Id(workEntity.getId());
 
@@ -118,9 +115,97 @@ public class WorkServiceImpl implements WorkService {
         return episodeRepository.findAllByWorkId(workId, pageable);
     }
 
+    @Transactional
     @Override
     public void clearWorkData(long workId) {
-        // TODO 기능 구현
+        log.info("Clearing work data, workId = {}", workId);
+
+        // 삭제할 작품 Entity 조회
+        WorkEntity workEntity = findWorkEntity(workId);
+
+        // 작품 썸네일 삭제
+        deleteThumbnailImage(workEntity.getThumbnailImage());
+
+        // 작품 에피소드 삭제
+        deleteEpisodes(workId);
+
+        // 작품 정보 삭제
+        workRepository.delete(workEntity);
+        log.info("Deleted work, workId = {}", workId);
+    }
+
+    /*
+    작품 썸네일 파일 삭제
+     */
+    private void deleteThumbnailImage(ThumbnailImageEntity thumbnailImage) {
+        if (Objects.nonNull(thumbnailImage)) {
+            fileStorageUploader.delete(thumbnailImage.getFileUrl());
+            thumbnailImageRepository.delete(thumbnailImage);
+            log.debug("Deleted thumbnail_image, id = {}", thumbnailImage.getId());
+        }
+    }
+
+    /*
+    작품 내 에피소드 정보 삭제
+     */
+    private void deleteEpisodes(long workId) {
+        log.info("Deleting episodes, workId = {}", workId);
+
+        List<EpisodeEntity> episodeEntityList = episodeRepository.findAllByWork_Id(workId);
+        deleteEpisodeImages(episodeEntityList, workId);
+        episodeRepository.deleteAll(episodeEntityList);
+
+        log.info("Deleted episodes, workId = {}, deletedRows = {}", workId, episodeEntityList.size());
+    }
+
+    /*
+    에피소드 별 이미지 파일 삭제
+     */
+    private void deleteEpisodeImages(List<EpisodeEntity> episodeEntityList, long workId) {
+        if (episodeEntityList.isEmpty()) {
+            log.warn("No episodes found for workId = {}", workId);
+        } else {
+            log.info("Deleting episode_images, episodeCount = {}", episodeEntityList.size());
+
+            List<Long> episodeIds = new ArrayList<>(episodeEntityList.size());
+
+            for (EpisodeEntity episodeEntity : episodeEntityList) {
+                ThumbnailImageEntity thumbnailImage = episodeEntity.getThumbnailImage();
+                deleteThumbnailImage(thumbnailImage);
+
+                episodeIds.add(episodeEntity.getId());
+            }
+
+            // 스토리지 내 작품 하위 데이터 제거
+            clearEpisodeImageFiles(workId);
+
+            // 에피소드 이미지 메타데이터 제거
+            long deletedRows = episodeImageRepository.deleteAllByEpisodeIdIn(episodeIds);
+
+            log.info("Deleted episode_images, episodeCount = {}, deletedRows = {}", episodeEntityList.size(), deletedRows);
+        }
+    }
+
+    /*
+    작품에 해당하는 에피소드 이미지 파일 스토리지 제거
+     */
+    private void clearEpisodeImageFiles(long workId) {
+        Path targetPath = Path.of(WORKS_DIRECTORY, Long.toString(workId));
+
+        log.info("Deleting episode image files, path = {}", targetPath);
+        fileStorageUploader.delete(targetPath.toString());
+        log.info("Deleted episode image files, path = {}", targetPath);
+    }
+
+    /*
+    작품 조회
+     */
+    private WorkEntity findWorkEntity(long workId) {
+        return workRepository.findById(workId)
+                .orElseThrow(() -> {
+                    log.warn("Not found workEntity, workId = {}", workId);
+                    return new EntityNotFoundException("작품을 찾을 수 없습니다");
+                });
     }
 
     /*

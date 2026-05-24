@@ -46,12 +46,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.StreamSupport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -480,6 +478,112 @@ class WorkServiceTest {
         assertThat(actual.getTotalElements()).isZero();
         assertThat(actual.getContent()).isEmpty();
         then(episodeRepository).should().findAllByWorkId(eq(workId), eq(pageRequest));
+    }
+
+    @DisplayName("특정 작품 데이터 삭제 : 성공")
+    @Test
+    void test_clearWorkData() {
+        long workId = 444L;
+        ThumbnailImageEntity workThumbnail = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/work.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "삭제 대상 작품", workThumbnail);
+        ThumbnailImageEntity episodeThumbnail1 = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/episode-1.png", 512);
+        ThumbnailImageEntity episodeThumbnail2 = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/episode-2.png", 512);
+        EpisodeEntity episode1 = TestDataGenerator.episodeEntity(1L, workEntity, 1, episodeThumbnail1);
+        EpisodeEntity episode2 = TestDataGenerator.episodeEntity(2L, workEntity, 2, episodeThumbnail2);
+        List<EpisodeEntity> episodes = List.of(episode1, episode2);
+        long episodeImageCount = 30L;
+        ArgumentCaptor<ThumbnailImageEntity> thumbnailCaptor = ArgumentCaptor.forClass(ThumbnailImageEntity.class);
+        ArgumentCaptor<Iterable> episodeCaptor = ArgumentCaptor.forClass(Iterable.class);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(episodeRepository.findAllByWork_Id(eq(workId))).willReturn(episodes);
+        given(episodeImageRepository.deleteAllByEpisodeIdIn(eq(List.of(episode1.getId(), episode2.getId())))).willReturn(episodeImageCount);
+
+        workService.clearWorkData(workId);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
+        then(fileStorageUploader).should().delete(eq(episodeThumbnail1.getFileUrl()));
+        then(fileStorageUploader).should().delete(eq(episodeThumbnail2.getFileUrl()));
+        then(fileStorageUploader).should().delete(eq("works/" + workId));
+        then(thumbnailImageRepository).should(times(episodes.size() + 1)).delete(thumbnailCaptor.capture());
+        then(episodeImageRepository).should().deleteAllByEpisodeIdIn(eq(List.of(episode1.getId(), episode2.getId())));
+        then(episodeRepository).should().deleteAll(episodeCaptor.capture());
+        then(workRepository).should().delete(eq(workEntity));
+
+        assertThat(thumbnailCaptor.getAllValues()).containsExactly(workThumbnail, episodeThumbnail1, episodeThumbnail2);
+        assertThat(toList((Iterable<EpisodeEntity>) episodeCaptor.getValue())).containsExactlyElementsOf(episodes);
+    }
+
+    @DisplayName("특정 작품 데이터 삭제 : 작품 조회 실패")
+    @Test
+    void test_clearWorkData_not_found_work() {
+        long workId = 444L;
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workService.clearWorkData(workId))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).shouldHaveNoInteractions();
+        then(thumbnailImageRepository).shouldHaveNoInteractions();
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("특정 작품 데이터 삭제 : 에피소드 목록 조회 결과 없음")
+    @Test
+    void test_clearWorkData_empty_episode_list() {
+        long workId = 444L;
+        ThumbnailImageEntity workThumbnail = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/work.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "에피소드 없는 작품", workThumbnail);
+        ArgumentCaptor<Iterable> episodeCaptor = ArgumentCaptor.forClass(Iterable.class);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(episodeRepository.findAllByWork_Id(eq(workId))).willReturn(List.of());
+
+        workService.clearWorkData(workId);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
+        then(fileStorageUploader).should(never()).delete(eq("works/" + workId));
+        then(thumbnailImageRepository).should().delete(eq(workThumbnail));
+        then(episodeImageRepository).shouldHaveNoInteractions();
+        then(episodeRepository).should().deleteAll(episodeCaptor.capture());
+        then(workRepository).should().delete(eq(workEntity));
+
+        assertThat(toList((Iterable<EpisodeEntity>) episodeCaptor.getValue())).isEmpty();
+    }
+
+    @DisplayName("특정 작품 데이터 삭제 : 스토리지 내 파일 삭제 실패")
+    @Test
+    void test_clearWorkData_failed_clear_storage_files() {
+        long workId = 444L;
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "삭제 실패 대상 작품", null);
+        ThumbnailImageEntity episodeThumbnail = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/episode-1.png", 512);
+        EpisodeEntity episode = TestDataGenerator.episodeEntity(1L, workEntity, 1, episodeThumbnail);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(episodeRepository.findAllByWork_Id(eq(workId))).willReturn(List.of(episode));
+        willAnswer(invocation -> {
+            String filePath = invocation.getArgument(0, String.class);
+            if (("works/" + workId).equals(filePath)) {
+                throw new IllegalStateException("storage delete failed");
+            }
+            return null;
+        }).given(fileStorageUploader).delete(anyString());
+
+        assertThatCode(() -> workService.clearWorkData(workId))
+                .isInstanceOf(IllegalStateException.class);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().delete(eq(episodeThumbnail.getFileUrl()));
+        then(fileStorageUploader).should().delete(eq("works/" + workId));
+        then(thumbnailImageRepository).should().delete(eq(episodeThumbnail));
+        then(episodeImageRepository).should(never()).deleteAllByEpisodeIdIn(anyList());
+        then(episodeRepository).should(never()).deleteAll(anyIterable());
+        then(workRepository).should(never()).delete(any(WorkEntity.class));
     }
 
     private void stubSavedWork(long workId) {
