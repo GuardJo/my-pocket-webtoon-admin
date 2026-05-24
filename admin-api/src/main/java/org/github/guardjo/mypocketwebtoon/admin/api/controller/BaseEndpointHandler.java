@@ -3,7 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -55,12 +55,12 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
         return BaseResponse.of(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
-    @ExceptionHandler(WorkUploadException.class)
+    @ExceptionHandler(WorkFileStorageException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public BaseResponse<String> handleWorkUploadException(WorkUploadException e) {
+    public BaseResponse<String> handleWorkFileException(WorkFileStorageException e) {
         log.error("WorkUpload Exception : {}", e.getMessage(), e);
 
-        return BaseResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, "작품 업로드 처리 중 오류가 발생했습니다.");
+        return BaseResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, "작품 파일 처리 중 오류가 발생했습니다.");
     }
 
     @Override

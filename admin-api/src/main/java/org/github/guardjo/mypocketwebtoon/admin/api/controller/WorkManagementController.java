@@ -78,7 +78,7 @@ public class WorkManagementController implements WorkApiDocs {
     public BaseResponse<String> removeWork(@PathVariable Long workId, @AuthenticationPrincipal AdminUserPrincipal principal) {
         log.info("DELETE: /api/v1/works/{}, workId = {}, userId = {}", workId, workId, principal.getUsername());
 
-        // TODO 기능 구현하기
+        workService.clearWorkData(workId);
 
         return BaseResponse.defaultSuccessResponse();
     }

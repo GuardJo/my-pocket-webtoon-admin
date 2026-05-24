@@ -2,7 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.R2StorageProperties;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -63,7 +63,7 @@ public class R2StorageUploader extends AbstractStorageUploader {
             log.debug("Uploaded file, fileName = {}, storedName = {}", file.getOriginalFilename(), putObjectRequest.key());
             return generateStoredFile(putObjectRequest, file.getOriginalFilename(), file.getSize());
         } catch (IOException e) {
-            throw new WorkUploadException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkFileStorageException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
@@ -86,7 +86,7 @@ public class R2StorageUploader extends AbstractStorageUploader {
             log.debug("Uploaded fileContent, fileName = {}, storedName = {}", originalFilename, putObjectRequest.key());
             return generateStoredFile(putObjectRequest, originalFilename, putObjectRequest.contentLength());
         } catch (IOException e) {
-            throw new WorkUploadException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkFileStorageException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 

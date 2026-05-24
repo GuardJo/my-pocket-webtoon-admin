@@ -4,7 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.StorageProperties;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
@@ -234,7 +234,7 @@ class WorkServiceTest {
                 .willThrow(new IllegalStateException("upload failed"));
 
         assertThatThrownBy(() -> workService.uploadWork(uploadRequest))
-                .isInstanceOf(WorkUploadException.class)
+                .isInstanceOf(WorkFileStorageException.class)
                 .hasMessage("작품 업로드 처리에 실패했습니다.")
                 .hasCauseInstanceOf(IllegalStateException.class);
 
@@ -267,7 +267,7 @@ class WorkServiceTest {
                 .willThrow(new IllegalStateException("db save failed"));
 
         assertThatThrownBy(() -> workService.uploadWork(uploadRequest))
-                .isInstanceOf(WorkUploadException.class)
+                .isInstanceOf(WorkFileStorageException.class)
                 .hasMessage("작품 업로드 처리에 실패했습니다.")
                 .hasCauseInstanceOf(IllegalStateException.class);
 
@@ -335,7 +335,7 @@ class WorkServiceTest {
                 .willThrow(new IllegalStateException("episode save failed"));
 
         assertThatThrownBy(() -> workService.uploadWork(uploadRequest))
-                .isInstanceOf(WorkUploadException.class)
+                .isInstanceOf(WorkFileStorageException.class)
                 .hasMessage("작품 업로드 처리에 실패했습니다.")
                 .hasCauseInstanceOf(IllegalStateException.class);
 
