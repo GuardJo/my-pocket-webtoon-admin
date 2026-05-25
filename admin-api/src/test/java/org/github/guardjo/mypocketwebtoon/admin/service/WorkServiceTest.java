@@ -9,6 +9,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
@@ -582,6 +583,49 @@ class WorkServiceTest {
         then(thumbnailImageRepository).should().deleteAllInBatch(anyIterable());
         then(workRepository).should().delete(any(WorkEntity.class));
         then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
+    }
+
+    @DisplayName("특정 작품 정보 갱신")
+    @Test
+    void test_updateWork() {
+        long workId = 1L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                "update-title",
+                "description",
+                "COMPLETED",
+                true
+        );
+        WorkEntity expected = TestDataGenerator.workEntity(workId, "test-title", null);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(expected));
+
+        workService.updateWork(workId, updateRequest);
+
+        assertThat(expected.getTitle()).isEqualTo(updateRequest.title());
+        assertThat(expected.getDescription()).isEqualTo(updateRequest.description());
+        assertThat(expected.getSerialState()).isEqualTo(updateRequest.serialState());
+        assertThat(expected.isVisibility()).isEqualTo(updateRequest.visibility());
+
+        then(workRepository).should().findById(eq(workId));
+    }
+
+    @DisplayName("특정 작품 정보 갱신 - 작품 조회 실패")
+    @Test
+    void test_updateWork_not_found_work() {
+        long workId = 999L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                "update-title",
+                "description",
+                "COMPLETED",
+                true
+        );
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workService.updateWork(workId, updateRequest))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(workRepository).should().findById(eq(workId));
     }
 
     private void stubSavedWork(long workId) {

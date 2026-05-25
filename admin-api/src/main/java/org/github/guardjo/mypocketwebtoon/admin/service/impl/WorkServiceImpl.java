@@ -142,7 +142,8 @@ public class WorkServiceImpl implements WorkService {
     public void updateWork(long workId, WorkUpdateRequest updateRequest) {
         log.info("Updating work, workId = {}, updateRequest = {}", workId, updateRequest);
 
-        // TODO 기능 구현
+        WorkEntity workEntity = findWorkEntity(workId);
+        workEntity.update(updateRequest);
 
         log.info("Updated work, workId = {}, updateRequest = {}", workId, updateRequest);
     }
