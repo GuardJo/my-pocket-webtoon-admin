@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/works")
@@ -90,6 +91,16 @@ public class WorkManagementController implements WorkApiDocs {
         log.info("PATCH: /api/v1/works/{}, workId = {}", workId, workId);
 
         workService.updateWork(workId, workUpdateRequest);
+
+        return BaseResponse.defaultSuccessResponse();
+    }
+
+    @PatchMapping(value = "/{workId}/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Override
+    public BaseResponse<String> updateWorkThumbnailImage(@PathVariable Long workId, @RequestPart("thumbnailFile") MultipartFile thumbnailImageFile) {
+        log.info("PATCH: /api/v1/works/{}/thumbnail, workId = {}, fileName = {}", workId, workId, thumbnailImageFile.getName());
+
+        workService.updateWorkThumbnailImage(workId, thumbnailImageFile);
 
         return BaseResponse.defaultSuccessResponse();
     }

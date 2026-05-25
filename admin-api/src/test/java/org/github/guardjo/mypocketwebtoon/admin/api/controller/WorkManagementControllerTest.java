@@ -562,6 +562,33 @@ class WorkManagementControllerTest {
         then(workService).should(never()).updateWork(eq(workId), eq(updateRequest));
     }
 
+    @DisplayName("PATCH : /api/v1/works/{workId}/thumbnail")
+    @Test
+    void test_updateWorkThumbnailImage() throws Exception {
+        long workId = 1L;
+        MockMultipartFile thumbnailFile = mockThumbnailFile();
+
+        willDoNothing().given(workService).updateWorkThumbnailImage(eq(workId), eq(thumbnailFile));
+
+        String response = mockMvc.perform(multipart(HttpMethod.PATCH, "/api/v1/works/{workId}/thumbnail", workId)
+                        .file(thumbnailFile)
+                        .with(csrf())
+                        .with(user(TEST_USER)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual).usingRecursiveComparison()
+                .isEqualTo(BaseResponse.defaultSuccessResponse());
+
+        then(workService).should().updateWorkThumbnailImage(eq(workId), eq(thumbnailFile));
+    }
+
     private MockMultipartFile mockThumbnailFile() {
         return new MockMultipartFile(
                 "thumbnailFile",

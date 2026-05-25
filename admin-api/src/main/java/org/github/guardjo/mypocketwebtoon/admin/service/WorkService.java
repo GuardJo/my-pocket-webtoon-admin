@@ -7,6 +7,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface WorkService {
     /**
@@ -56,4 +57,12 @@ public interface WorkService {
      * @param updateRequest 업데이트할 데이터
      */
     void updateWork(long workId, WorkUpdateRequest updateRequest);
+
+    /**
+     * 식별키에 해당하는 작품에 대한 작품 썸네일을 수정한다.
+     *
+     * @param workId             작품 식별키
+     * @param thumbnailImageFile 작품 썸네일 파일
+     */
+    void updateWorkThumbnailImage(long workId, MultipartFile thumbnailImageFile);
 }

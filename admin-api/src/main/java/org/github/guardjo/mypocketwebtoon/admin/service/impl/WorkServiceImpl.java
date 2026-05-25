@@ -148,6 +148,14 @@ public class WorkServiceImpl implements WorkService {
         log.info("Updated work, workId = {}, updateRequest = {}", workId, updateRequest);
     }
 
+    @Transactional
+    @Override
+    public void updateWorkThumbnailImage(long workId, MultipartFile thumbnailImageFile) {
+        log.info("Updating work thumbnail image, workId = {}", workId);
+        // TODO 기능 구현
+        log.info("Updated work thumbnail image, workId = {}", workId);
+    }
+
     /*
     작품 썸네일 파일 삭제
      */
