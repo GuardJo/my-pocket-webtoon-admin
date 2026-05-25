@@ -98,7 +98,7 @@ public class WorkManagementController implements WorkApiDocs {
     @PatchMapping(value = "/{workId}/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Override
     public BaseResponse<String> updateWorkThumbnailImage(@PathVariable Long workId, @RequestPart("thumbnailFile") MultipartFile thumbnailImageFile) {
-        log.info("PATCH: /api/v1/works/{}/thumbnail, workId = {}, fileName = {}", workId, workId, thumbnailImageFile.getName());
+        log.info("PATCH: /api/v1/works/{}/thumbnail, workId = {}, fileName = {}", workId, workId, thumbnailImageFile.getOriginalFilename());
 
         workService.updateWorkThumbnailImage(workId, thumbnailImageFile);
 

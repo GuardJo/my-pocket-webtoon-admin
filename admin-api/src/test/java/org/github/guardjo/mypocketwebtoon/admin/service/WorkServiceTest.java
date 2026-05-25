@@ -635,9 +635,10 @@ class WorkServiceTest {
         ThumbnailImageEntity oldThumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/old-thumbnail.png", 1024);
         WorkEntity workEntity = TestDataGenerator.workEntity(workId, "썸네일 갱신 대상 작품", oldThumbnailImage);
         MockMultipartFile newThumbnailFile = mockThumbnailFile();
-        StoredFile storedThumbnailFile = storedThumbnailFile(
+        StoredFile storedThumbnailFile = new StoredFile(
                 "new-thumbnail.png",
                 "stored-new-thumbnail.png",
+                "/storeage/thumbnail/stored-new-thumbnail.png",
                 "/uploads/thumbnail/stored-new-thumbnail.png",
                 newThumbnailFile.getSize()
         );
@@ -691,6 +692,24 @@ class WorkServiceTest {
         assertThat(workEntity.getThumbnailImage()).isSameAs(oldThumbnailImage);
     }
 
+    @DisplayName("특정 작품 썸네일 갱신 - 작품 조회 실패")
+    @Test
+    void test_updateWorkThumbnailImage_not_found_work() {
+        long workId = 1L;
+        MockMultipartFile newThumbnailFile = mockThumbnailFile();
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workService.updateWorkThumbnailImage(workId, newThumbnailFile))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).shouldHaveNoInteractions();
+        then(thumbnailImageRepository).shouldHaveNoInteractions();
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
+    }
+
     private void stubSavedWork(long workId) {
         given(workRepository.save(any(WorkEntity.class)))
                 .willAnswer(invocation -> {
@@ -720,16 +739,6 @@ class WorkServiceTest {
                             1024L
                     );
                 });
-    }
-
-    private StoredFile storedThumbnailFile(String originalFilename, String storedFilename, String publicUrl, long size) {
-        return new StoredFile(
-                originalFilename,
-                storedFilename,
-                "/tmp/storage/thumbnail/" + storedFilename,
-                publicUrl,
-                size
-        );
     }
 
     private WorkUploadRequest workUploadRequest(MockMultipartFile thumbnailFile) {

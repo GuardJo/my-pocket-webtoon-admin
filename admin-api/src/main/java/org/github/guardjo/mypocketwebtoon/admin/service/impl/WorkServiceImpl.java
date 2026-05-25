@@ -170,12 +170,8 @@ public class WorkServiceImpl implements WorkService {
                 deleteWorkThumbnailImage(oldThumbnailImage);
                 log.debug("Deleted old thumbnail image, id = {}, url = {}", oldThumbnailImage.getId(), oldThumbnailImage.getFileUrl());
             }
-        } catch (DataIntegrityViolationException | WorkFileStorageException e) {
-            log.error("Failed to upload thumbnail image, workId = {}", workId, e);
-            rollbackUploadedFiles(uploadedFiles);
-            throw e;
         } catch (RuntimeException e) {
-            log.error("Failed to update work thumbnail image, workId = {}", workId, e);
+            log.error("Failed to upload thumbnail image, workId = {}", workId, e);
             rollbackUploadedFiles(uploadedFiles);
             throw e;
         }
