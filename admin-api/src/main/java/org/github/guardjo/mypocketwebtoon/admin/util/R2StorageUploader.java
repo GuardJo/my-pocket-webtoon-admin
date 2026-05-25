@@ -96,32 +96,39 @@ public class R2StorageUploader extends AbstractStorageUploader {
 
         log.debug("Delete file, storedName = {}", objectKey);
 
+        // 상위 디렉터리채로 삭제
         if (objectKey.endsWith("/")) {
-            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                    .bucket(bucketName)
-                    .prefix(objectKey)
-                    .build();
-            ListObjectsV2Response listResponse = r2Client.listObjectsV2(listRequest);
-
-            List<ObjectIdentifier> deleteObjects = listResponse.contents().stream()
-                    .map(res -> {
-                        return ObjectIdentifier.builder()
-                                .key(res.key())
-                                .build();
-                    })
-                    .toList();
-
-            if (!deleteObjects.isEmpty()) {
-                DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+            String continuationToken = null;
+            do {
+                ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                         .bucket(bucketName)
-                        .delete(Delete.builder()
-                                .objects(deleteObjects)
-                                .build())
+                        .prefix(objectKey)
+                        .continuationToken(continuationToken)
                         .build();
+                ListObjectsV2Response listResponse = r2Client.listObjectsV2(listRequest);
 
-                r2Client.deleteObjects(deleteObjectsRequest);
-            }
+                List<ObjectIdentifier> deleteObjects = listResponse.contents().stream()
+                        .map(res -> {
+                            return ObjectIdentifier.builder()
+                                    .key(res.key())
+                                    .build();
+                        })
+                        .toList();
+
+                if (!deleteObjects.isEmpty()) {
+                    DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                            .bucket(bucketName)
+                            .delete(Delete.builder()
+                                    .objects(deleteObjects)
+                                    .build())
+                            .build();
+
+                    r2Client.deleteObjects(deleteObjectsRequest);
+                }
+                continuationToken = listResponse.nextContinuationToken();
+            } while (continuationToken != null);
         } else {
+            // 특정 파일 삭제
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)
                     .key(objectKey)

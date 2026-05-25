@@ -127,7 +127,7 @@ public class WorkServiceImpl implements WorkService {
         deleteEpisodes(workId);
 
         // 작품 정보 삭제
-        deleteThumbnailImage(workEntity.getThumbnailImage());
+        deleteWorkThumbnailImage(workEntity.getThumbnailImage());
 
         workRepository.delete(workEntity);
 
@@ -139,7 +139,7 @@ public class WorkServiceImpl implements WorkService {
     /*
     작품 썸네일 파일 삭제
      */
-    private void deleteThumbnailImage(ThumbnailImageEntity thumbnailImage) {
+    private void deleteWorkThumbnailImage(ThumbnailImageEntity thumbnailImage) {
         if (Objects.nonNull(thumbnailImage)) {
             thumbnailImageRepository.delete(thumbnailImage);
             fileStorageUploader.delete(thumbnailImage.getFileUrl());
@@ -153,16 +153,18 @@ public class WorkServiceImpl implements WorkService {
     private void deleteEpisodes(long workId) {
         log.info("Deleting episodes, workId = {}", workId);
 
+        // 에피소드 데이터 삭제
         List<EpisodeEntity> episodeEntityList = episodeRepository.findAllByWork_Id(workId);
         List<Long> episodeIds = episodeEntityList.stream().map(EpisodeEntity::getId).toList();
         deleteEpisodeImages(episodeIds, workId);
         episodeRepository.deleteAllInBatch(episodeEntityList);
 
         // 에피소드 별 썸네일 데이터 삭제
-        for (EpisodeEntity episodeEntity : episodeEntityList) {
-            ThumbnailImageEntity thumbnailImage = episodeEntity.getThumbnailImage();
-            deleteThumbnailImage(thumbnailImage);
-        }
+        List<ThumbnailImageEntity> thumbnailImageEntities = episodeEntityList.stream()
+                .map(EpisodeEntity::getThumbnailImage)
+                .filter(Objects::nonNull)
+                .toList();
+        thumbnailImageRepository.deleteAllInBatch(thumbnailImageEntities);
 
         log.info("Deleted episodes, workId = {}, deletedRows = {}", workId, episodeEntityList.size());
     }

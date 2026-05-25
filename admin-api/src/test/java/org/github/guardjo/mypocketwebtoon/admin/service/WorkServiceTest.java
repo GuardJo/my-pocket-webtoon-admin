@@ -492,7 +492,7 @@ class WorkServiceTest {
         EpisodeEntity episode2 = TestDataGenerator.episodeEntity(2L, workEntity, 2, episodeThumbnail2);
         List<EpisodeEntity> episodes = List.of(episode1, episode2);
         long episodeImageCount = 30L;
-        ArgumentCaptor<ThumbnailImageEntity> thumbnailCaptor = ArgumentCaptor.forClass(ThumbnailImageEntity.class);
+        ArgumentCaptor<List<ThumbnailImageEntity>> thumbnailCaptor = ArgumentCaptor.forClass(List.class);
         ArgumentCaptor<Iterable> episodeCaptor = ArgumentCaptor.forClass(Iterable.class);
 
         given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
@@ -503,15 +503,14 @@ class WorkServiceTest {
 
         then(workRepository).should().findById(eq(workId));
         then(fileStorageUploader).should().delete(eq(workThumbnail.getFileUrl()));
-        then(fileStorageUploader).should().delete(eq(episodeThumbnail1.getFileUrl()));
-        then(fileStorageUploader).should().delete(eq(episodeThumbnail2.getFileUrl()));
         then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
-        then(thumbnailImageRepository).should(times(episodes.size() + 1)).delete(thumbnailCaptor.capture());
         then(episodeImageRepository).should().deleteAllByEpisodeIdIn(eq(List.of(episode1.getId(), episode2.getId())));
         then(episodeRepository).should().deleteAllInBatch(episodeCaptor.capture());
+        then(thumbnailImageRepository).should().deleteAllInBatch(thumbnailCaptor.capture());
+        then(thumbnailImageRepository).should().delete(eq(workThumbnail));
         then(workRepository).should().delete(eq(workEntity));
 
-        assertThat(thumbnailCaptor.getAllValues()).containsExactly(episodeThumbnail1, episodeThumbnail2, workThumbnail);
+        assertThat(thumbnailCaptor.getValue()).containsAll(List.of(episodeThumbnail1, episodeThumbnail2));
         assertThat(toList((Iterable<EpisodeEntity>) episodeCaptor.getValue())).containsExactlyElementsOf(episodes);
     }
 
@@ -580,10 +579,9 @@ class WorkServiceTest {
         then(workRepository).should().findById(eq(workId));
         then(episodeImageRepository).should().deleteAllByEpisodeIdIn(anyList());
         then(episodeRepository).should().deleteAllInBatch(anyIterable());
+        then(thumbnailImageRepository).should().deleteAllInBatch(anyIterable());
         then(workRepository).should().delete(any(WorkEntity.class));
-        then(fileStorageUploader).should().delete(eq(episodeThumbnail.getFileUrl()));
         then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
-        then(thumbnailImageRepository).should().delete(eq(episodeThumbnail));
     }
 
     private void stubSavedWork(long workId) {
