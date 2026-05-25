@@ -9,6 +9,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
@@ -582,6 +583,131 @@ class WorkServiceTest {
         then(thumbnailImageRepository).should().deleteAllInBatch(anyIterable());
         then(workRepository).should().delete(any(WorkEntity.class));
         then(fileStorageUploader).should().delete(eq("works/" + workId + "/"));
+    }
+
+    @DisplayName("특정 작품 정보 갱신")
+    @Test
+    void test_updateWork() {
+        long workId = 1L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                "update-title",
+                "description",
+                "COMPLETED",
+                true
+        );
+        WorkEntity expected = TestDataGenerator.workEntity(workId, "test-title", null);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(expected));
+
+        workService.updateWork(workId, updateRequest);
+
+        assertThat(expected.getTitle()).isEqualTo(updateRequest.title());
+        assertThat(expected.getDescription()).isEqualTo(updateRequest.description());
+        assertThat(expected.getSerialState()).isEqualTo(updateRequest.serialState());
+        assertThat(expected.isVisibility()).isEqualTo(updateRequest.visibility());
+
+        then(workRepository).should().findById(eq(workId));
+    }
+
+    @DisplayName("특정 작품 정보 갱신 - 작품 조회 실패")
+    @Test
+    void test_updateWork_not_found_work() {
+        long workId = 999L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                "update-title",
+                "description",
+                "COMPLETED",
+                true
+        );
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workService.updateWork(workId, updateRequest))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(workRepository).should().findById(eq(workId));
+    }
+
+    @DisplayName("특정 작품 썸네일 갱신")
+    @Test
+    void test_updateWorkThumbnailImage() {
+        long workId = 1L;
+        ThumbnailImageEntity oldThumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/old-thumbnail.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "썸네일 갱신 대상 작품", oldThumbnailImage);
+        MockMultipartFile newThumbnailFile = mockThumbnailFile();
+        StoredFile storedThumbnailFile = new StoredFile(
+                "new-thumbnail.png",
+                "stored-new-thumbnail.png",
+                "/storeage/thumbnail/stored-new-thumbnail.png",
+                "/uploads/thumbnail/stored-new-thumbnail.png",
+                newThumbnailFile.getSize()
+        );
+        ArgumentCaptor<ThumbnailImageEntity> thumbnailCaptor = ArgumentCaptor.forClass(ThumbnailImageEntity.class);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(fileStorageUploader.upload(eq(newThumbnailFile), eq("thumbnail"))).willReturn(storedThumbnailFile);
+        given(thumbnailImageRepository.save(any(ThumbnailImageEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        workService.updateWorkThumbnailImage(workId, newThumbnailFile);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().upload(eq(newThumbnailFile), eq("thumbnail"));
+        then(thumbnailImageRepository).should().save(thumbnailCaptor.capture());
+        then(thumbnailImageRepository).should().delete(eq(oldThumbnailImage));
+        then(fileStorageUploader).should().delete(eq(oldThumbnailImage.getFileUrl()));
+        then(fileStorageUploader).should(never()).delete(eq(storedThumbnailFile));
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
+
+        ThumbnailImageEntity newThumbnailImage = thumbnailCaptor.getValue();
+        assertThat(newThumbnailImage.getFileUrl()).isEqualTo(storedThumbnailFile.publicUrl());
+        assertThat(newThumbnailImage.getFileSize()).isEqualTo(storedThumbnailFile.size());
+        assertThat(workEntity.getThumbnailImage()).isSameAs(newThumbnailImage);
+    }
+
+    @DisplayName("특정 작품 썸네일 갱신 - 신규 이미지 업로드 실패")
+    @Test
+    void test_updateWorkThumbnailImage_failed_to_upload_new_image() {
+        long workId = 1L;
+        ThumbnailImageEntity oldThumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/old-thumbnail.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "썸네일 갱신 실패 대상 작품", oldThumbnailImage);
+        MockMultipartFile newThumbnailFile = mockThumbnailFile();
+        WorkFileStorageException expectedException = new WorkFileStorageException("thumbnail upload failed");
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(fileStorageUploader.upload(eq(newThumbnailFile), eq("thumbnail"))).willThrow(expectedException);
+
+        assertThatThrownBy(() -> workService.updateWorkThumbnailImage(workId, newThumbnailFile))
+                .isSameAs(expectedException);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().upload(eq(newThumbnailFile), eq("thumbnail"));
+        then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
+        then(fileStorageUploader).should(never()).delete(anyString());
+        then(thumbnailImageRepository).shouldHaveNoInteractions();
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
+
+        assertThat(workEntity.getThumbnailImage()).isSameAs(oldThumbnailImage);
+    }
+
+    @DisplayName("특정 작품 썸네일 갱신 - 작품 조회 실패")
+    @Test
+    void test_updateWorkThumbnailImage_not_found_work() {
+        long workId = 1L;
+        MockMultipartFile newThumbnailFile = mockThumbnailFile();
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workService.updateWorkThumbnailImage(workId, newThumbnailFile))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).shouldHaveNoInteractions();
+        then(thumbnailImageRepository).shouldHaveNoInteractions();
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
     }
 
     private void stubSavedWork(long workId) {

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.WorkApiDocs;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/works")
@@ -79,6 +81,26 @@ public class WorkManagementController implements WorkApiDocs {
         log.info("DELETE: /api/v1/works/{}, workId = {}, userId = {}", workId, workId, principal.getUsername());
 
         workService.clearWorkData(workId);
+
+        return BaseResponse.defaultSuccessResponse();
+    }
+
+    @PatchMapping(value = "/{workId}")
+    @Override
+    public BaseResponse<String> updateWork(@PathVariable Long workId, @Valid @RequestBody WorkUpdateRequest workUpdateRequest) {
+        log.info("PATCH: /api/v1/works/{}, workId = {}", workId, workId);
+
+        workService.updateWork(workId, workUpdateRequest);
+
+        return BaseResponse.defaultSuccessResponse();
+    }
+
+    @PatchMapping(value = "/{workId}/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Override
+    public BaseResponse<String> updateWorkThumbnailImage(@PathVariable Long workId, @RequestPart("thumbnailFile") MultipartFile thumbnailImageFile) {
+        log.info("PATCH: /api/v1/works/{}/thumbnail, workId = {}, fileName = {}", workId, workId, thumbnailImageFile.getOriginalFilename());
+
+        workService.updateWorkThumbnailImage(workId, thumbnailImageFile);
 
         return BaseResponse.defaultSuccessResponse();
     }

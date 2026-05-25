@@ -2,6 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.model.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 
 @Table(name = "work",
         indexes = {
@@ -30,8 +31,21 @@ public class WorkEntity extends BaseEntity {
 
     @OneToOne
     @JoinColumn(name = "thumbnail_id")
+    @Setter
     private ThumbnailImageEntity thumbnailImage;
 
     @Column(nullable = false)
     private boolean visibility;
+
+    /**
+     * 주어진 데이터를 기반으로 기존 데이터를 갱신한다.
+     *
+     * @param updateRequest 갱신할 작품 정보 데이터
+     */
+    public void update(WorkUpdateRequest updateRequest) {
+        this.title = updateRequest.title();
+        this.description = updateRequest.description();
+        this.visibility = updateRequest.visibility();
+        this.serialState = updateRequest.serialState();
+    }
 }

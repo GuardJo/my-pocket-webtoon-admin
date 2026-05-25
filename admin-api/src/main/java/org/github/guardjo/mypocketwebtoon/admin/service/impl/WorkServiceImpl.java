@@ -11,6 +11,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
@@ -134,6 +135,48 @@ public class WorkServiceImpl implements WorkService {
         // 스토리지 내 작품 하위 파일 제거
         clearEpisodeImageFiles(workId);
         log.info("Deleted work, workId = {}", workId);
+    }
+
+    @Transactional
+    @Override
+    public void updateWork(long workId, WorkUpdateRequest updateRequest) {
+        log.info("Updating work, workId = {}, updateRequest = {}", workId, updateRequest);
+
+        WorkEntity workEntity = findWorkEntity(workId);
+        workEntity.update(updateRequest);
+
+        log.info("Updated work, workId = {}, updateRequest = {}", workId, updateRequest);
+    }
+
+    @Transactional
+    @Override
+    public void updateWorkThumbnailImage(long workId, MultipartFile thumbnailImageFile) {
+        log.info("Updating work thumbnail image, workId = {}", workId);
+
+        WorkEntity workEntity = findWorkEntity(workId);
+        ThumbnailImageEntity oldThumbnailImage = workEntity.getThumbnailImage();
+
+        List<StoredFile> uploadedFiles = new ArrayList<>();
+        try {
+            log.debug("Uploading thumbnail image, workId = {}", workId);
+            StoredFile storedThumbnailFile = fileStorageUploader.upload(thumbnailImageFile, THUMBNAIL_DIRECTORY);
+            uploadedFiles.add(storedThumbnailFile);
+            ThumbnailImageEntity newThumbnailImage = saveNewThumbnailImage(storedThumbnailFile);
+            workEntity.setThumbnailImage(newThumbnailImage);
+            log.debug("Uploaded thumbnail image, workId = {}", workId);
+
+            if (Objects.nonNull(oldThumbnailImage)) {
+                log.debug("Deleting old thumbnail image, id = {}, url = {}", oldThumbnailImage.getId(), oldThumbnailImage.getFileUrl());
+                deleteWorkThumbnailImage(oldThumbnailImage);
+                log.debug("Deleted old thumbnail image, id = {}, url = {}", oldThumbnailImage.getId(), oldThumbnailImage.getFileUrl());
+            }
+        } catch (RuntimeException e) {
+            log.error("Failed to upload thumbnail image, workId = {}", workId, e);
+            rollbackUploadedFiles(uploadedFiles);
+            throw e;
+        }
+
+        log.info("Updated work thumbnail image, workId = {}", workId);
     }
 
     /*

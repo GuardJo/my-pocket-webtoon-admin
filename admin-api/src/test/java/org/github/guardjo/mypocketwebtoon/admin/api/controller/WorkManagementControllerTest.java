@@ -8,6 +8,7 @@ import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageExcepti
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -80,7 +82,7 @@ class WorkManagementControllerTest {
                 mockEpisodeFile()
         );
 
-        String response = mockMvc.perform(multipart("/api/v1/works")
+        String response = mockMvc.perform(multipart(HttpMethod.POST, "/api/v1/works")
                         .file((MockMultipartFile) uploadRequest.thumbnailFile())
                         .file((MockMultipartFile) uploadRequest.episodeFile())
                         .param("title", uploadRequest.title())
@@ -476,6 +478,115 @@ class WorkManagementControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isInternalServerError());
+    }
+
+    @DisplayName("PATCH : /api/v1/works/{workId}")
+    @Test
+    void test_updateWork() throws Exception {
+        long workId = 1L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                "Update title",
+                "update description",
+                "COMPLETED",
+                true);
+        String requestContent = objectMapper.writeValueAsString(updateRequest);
+
+        willDoNothing().given(workService).updateWork(eq(workId), eq(updateRequest));
+
+        String response = mockMvc.perform(patch("/api/v1/works/{workId}", workId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestContent)
+                        .with(csrf())
+                        .with(user(TEST_USER))
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual).usingRecursiveComparison()
+                .isEqualTo(BaseResponse.defaultSuccessResponse());
+
+        then(workService).should().updateWork(eq(workId), eq(updateRequest));
+    }
+
+    @DisplayName("PATCH : /api/v1/works/{workId} : 작품 정보 조회 실패")
+    @Test
+    void test_updateWork_not_found_data() throws Exception {
+        long workId = 1L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                "Update title",
+                "update description",
+                "COMPLETED",
+                true);
+        String requestContent = objectMapper.writeValueAsString(updateRequest);
+
+        willThrow(EntityNotFoundException.class).given(workService).updateWork(eq(workId), eq(updateRequest));
+
+        mockMvc.perform(patch("/api/v1/works/{workId}", workId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestContent)
+                        .with(csrf())
+                        .with(user(TEST_USER))
+                )
+                .andDo(print())
+                .andExpect(status().isNotFound());
+
+        then(workService).should().updateWork(eq(workId), eq(updateRequest));
+    }
+
+    @DisplayName("PATCH : /api/v1/works/{workId} : 요청 데이터가 올바르지 않음")
+    @Test
+    void test_updateWork_bad_request() throws Exception {
+        long workId = 1L;
+        WorkUpdateRequest updateRequest = new WorkUpdateRequest(
+                null,
+                "update description",
+                "COMPLETED",
+                true);
+        String requestContent = objectMapper.writeValueAsString(updateRequest);
+
+        mockMvc.perform(patch("/api/v1/works/{workId}", workId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestContent)
+                        .with(csrf())
+                        .with(user(TEST_USER))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        then(workService).should(never()).updateWork(eq(workId), eq(updateRequest));
+    }
+
+    @DisplayName("PATCH : /api/v1/works/{workId}/thumbnail")
+    @Test
+    void test_updateWorkThumbnailImage() throws Exception {
+        long workId = 1L;
+        MockMultipartFile thumbnailFile = mockThumbnailFile();
+
+        willDoNothing().given(workService).updateWorkThumbnailImage(eq(workId), eq(thumbnailFile));
+
+        String response = mockMvc.perform(multipart(HttpMethod.PATCH, "/api/v1/works/{workId}/thumbnail", workId)
+                        .file(thumbnailFile)
+                        .with(csrf())
+                        .with(user(TEST_USER)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual).usingRecursiveComparison()
+                .isEqualTo(BaseResponse.defaultSuccessResponse());
+
+        then(workService).should().updateWorkThumbnailImage(eq(workId), eq(thumbnailFile));
     }
 
     private MockMultipartFile mockThumbnailFile() {
