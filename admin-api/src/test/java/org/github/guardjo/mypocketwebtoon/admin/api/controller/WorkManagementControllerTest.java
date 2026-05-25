@@ -4,21 +4,22 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.github.guardjo.mypocketwebtoon.admin.config.StaticResourceConfig;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
+import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,8 +44,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -54,8 +56,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 classes = StaticResourceConfig.class
         )
 )
-@AutoConfigureMockMvc(addFilters = false)
 class WorkManagementControllerTest {
+    private final static AdminUserPrincipal TEST_USER = new AdminUserPrincipal(AdminInfo.of(TestDataGenerator.adminInfoEntity("test", "tester")));
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -84,6 +87,7 @@ class WorkManagementControllerTest {
                         .param("description", uploadRequest.description())
                         .param("serialState", uploadRequest.serialState())
                         .param("visibility", String.valueOf(uploadRequest.visibility()))
+                        .with(user(TEST_USER))
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -119,6 +123,7 @@ class WorkManagementControllerTest {
                         .param("description", uploadRequest.description())
                         .param("serialState", uploadRequest.serialState())
                         .param("visibility", String.valueOf(uploadRequest.visibility()))
+                        .with(user(TEST_USER))
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -153,6 +158,7 @@ class WorkManagementControllerTest {
                         .param("description", uploadRequest.description())
                         .param("serialState", uploadRequest.serialState())
                         .param("visibility", String.valueOf(uploadRequest.visibility()))
+                        .with(user(TEST_USER))
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -173,7 +179,7 @@ class WorkManagementControllerTest {
     @DisplayName("POST: /api/v1/works - 서비스 예외 발생 시 500 응답을 반환한다")
     @Test
     void test_uploadWork_fail_when_serviceThrowsException() throws Exception {
-        willThrow(new WorkUploadException("작품 업로드 처리에 실패했습니다.", new IllegalStateException("upload failed")))
+        willThrow(new WorkFileStorageException("작품 업로드 처리에 실패했습니다.", new IllegalStateException("upload failed")))
                 .given(workService)
                 .uploadWork(any(WorkUploadRequest.class));
 
@@ -184,6 +190,7 @@ class WorkManagementControllerTest {
                         .param("description", "작품 설명")
                         .param("serialState", "COMPLETED")
                         .param("visibility", "true")
+                        .with(user(TEST_USER))
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
@@ -196,7 +203,7 @@ class WorkManagementControllerTest {
 
         assertThat(actual.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.name());
-        assertThat(actual.getData()).isEqualTo("작품 업로드 처리 중 오류가 발생했습니다.");
+        assertThat(actual.getData()).isEqualTo("작품 파일 처리 중 오류가 발생했습니다.");
 
         then(workService).should().uploadWork(any(WorkUploadRequest.class));
     }
@@ -215,6 +222,7 @@ class WorkManagementControllerTest {
                         .param("description", "작품 설명")
                         .param("serialState", "COMPLETED")
                         .param("visibility", "true")
+                        .with(user(TEST_USER))
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -249,7 +257,8 @@ class WorkManagementControllerTest {
 
         String response = mockMvc.perform(get("/api/v1/works")
                         .param("page", String.valueOf(pageRequest.getPageNumber()))
-                        .param("size", String.valueOf(pageRequest.getPageSize())))
+                        .param("size", String.valueOf(pageRequest.getPageSize()))
+                        .with(user(TEST_USER)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn()
@@ -280,7 +289,8 @@ class WorkManagementControllerTest {
 
         String response = mockMvc.perform(get("/api/v1/works")
                         .param("page", String.valueOf(pageRequest.getPageNumber()))
-                        .param("size", String.valueOf(pageRequest.getPageSize())))
+                        .param("size", String.valueOf(pageRequest.getPageSize()))
+                        .with(user(TEST_USER)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn()
@@ -317,7 +327,8 @@ class WorkManagementControllerTest {
 
         given(workService.getWorkInfo(eq(workId))).willReturn(workInfo);
 
-        String response = mockMvc.perform(get("/api/v1/works/{workId}", workId))
+        String response = mockMvc.perform(get("/api/v1/works/{workId}", workId)
+                        .with(user(TEST_USER)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn()
@@ -341,7 +352,8 @@ class WorkManagementControllerTest {
 
         given(workService.getWorkInfo(eq(workId))).willThrow(new EntityNotFoundException("작품을 찾을 수 없습니다"));
 
-        String response = mockMvc.perform(get("/api/v1/works/{workId}", workId))
+        String response = mockMvc.perform(get("/api/v1/works/{workId}", workId)
+                        .with(user(TEST_USER)))
                 .andDo(print())
                 .andExpect(status().isNotFound())
                 .andReturn()
@@ -372,7 +384,8 @@ class WorkManagementControllerTest {
 
         String response = mockMvc.perform(get("/api/v1/works/{workId}/episodes", workId)
                         .param("page", String.valueOf(pageRequest.getPageNumber()))
-                        .param("size", String.valueOf(pageRequest.getPageSize())))
+                        .param("size", String.valueOf(pageRequest.getPageSize()))
+                        .with(user(TEST_USER)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn()
@@ -401,11 +414,68 @@ class WorkManagementControllerTest {
     void test_getEpisodes_bad_request() throws Exception {
         String invalidWorkId = "invalid";
 
-        mockMvc.perform(get("/api/v1/works/{workId}/episodes", invalidWorkId))
+        mockMvc.perform(get("/api/v1/works/{workId}/episodes", invalidWorkId)
+                        .with(user(TEST_USER)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
         then(workService).should(never()).getEpisodeInfosByWork(any(Long.class), any());
+    }
+
+    @DisplayName("DELETE : /api/v1/works/{workId}")
+    @Test
+    void test_removeWork() throws Exception {
+        long workId = 1L;
+
+
+        willDoNothing().given(workService).clearWorkData(workId);
+
+        String response = mockMvc.perform(delete("/api/v1/works/{workId}", workId)
+                        .with(user(TEST_USER))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @DisplayName("DELETE : /api/v1/works/{workId} - 삭제 작품 조회 실패")
+    @Test
+    void test_removeWork_not_found_data() throws Exception {
+        long workId = 1L;
+
+        willThrow(new EntityNotFoundException("Not found work Entity")).given(workService).clearWorkData(workId);
+
+        mockMvc.perform(delete("/api/v1/works/{workId}", workId)
+                        .with(user(TEST_USER))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isNotFound());
+    }
+
+    @DisplayName("DELETE : /api/v1/works/{workId} - 스토리지 파일 삭제 실패")
+    @Test
+    void test_removeWork_failed_delete_storage() throws Exception {
+        long workId = 1L;
+
+
+        willThrow(new WorkFileStorageException("파일 처리에 실패했습니다.", new IllegalStateException("delete failed"))).given(workService).clearWorkData(workId);
+
+        mockMvc.perform(delete("/api/v1/works/{workId}", workId)
+                        .with(user(TEST_USER))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isInternalServerError());
     }
 
     private MockMultipartFile mockThumbnailFile() {

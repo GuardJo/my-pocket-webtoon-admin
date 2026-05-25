@@ -9,6 +9,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
+import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.WorkService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,5 +71,15 @@ public class WorkManagementController implements WorkApiDocs {
         Page<EpisodeInfo> episodeInfos = workService.getEpisodeInfosByWork(workId, pageable);
 
         return BaseResponse.of(HttpStatus.OK, new PagedModel<>(episodeInfos));
+    }
+
+    @DeleteMapping("/{workId}")
+    @Override
+    public BaseResponse<String> removeWork(@PathVariable Long workId, @AuthenticationPrincipal AdminUserPrincipal principal) {
+        log.info("DELETE: /api/v1/works/{}, workId = {}, userId = {}", workId, workId, principal.getUsername());
+
+        workService.clearWorkData(workId);
+
+        return BaseResponse.defaultSuccessResponse();
     }
 }

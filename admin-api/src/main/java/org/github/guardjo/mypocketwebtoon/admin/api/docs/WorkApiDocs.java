@@ -8,6 +8,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkSummary;
+import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
@@ -26,4 +27,7 @@ public interface WorkApiDocs {
     @Operation(summary = "특정 작품 내 에피소드 목록 조회", description = "특정 작품 내 에피소드 정보 목록을 조회한다")
     BaseResponse<PagedModel<EpisodeInfo>> getEpisodes(@ParameterObject Pageable pageable,
                                                       @Parameter(description = "작품 식별키") Long workId);
+
+    @Operation(summary = "작품 삭제", description = "식별키에 해당하는 작품 및 관련 데이터를 삭제한다.")
+    BaseResponse<String> removeWork(Long workId, @Parameter(hidden = true) AdminUserPrincipal principal);
 }

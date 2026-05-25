@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.StorageProperties;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
@@ -32,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -75,12 +76,12 @@ public class WorkServiceImpl implements WorkService {
             uploadEpisodes(uploadRequest.episodeFile(), workEntity, uploadedFiles);
 
             log.info("Uploaded, new work, id = {}, title = {}", workEntity.getId(), workEntity.getTitle());
-        } catch (DataIntegrityViolationException | WorkUploadException dataIntegrityViolationException) {
+        } catch (DataIntegrityViolationException | WorkFileStorageException dataIntegrityViolationException) {
             rollbackUploadedFiles(uploadedFiles);
             throw dataIntegrityViolationException;
         } catch (RuntimeException e) {
             rollbackUploadedFiles(uploadedFiles);
-            throw new WorkUploadException("작품 업로드 처리에 실패했습니다.", e);
+            throw new WorkFileStorageException("작품 업로드 처리에 실패했습니다.", e);
         }
     }
 
@@ -93,11 +94,7 @@ public class WorkServiceImpl implements WorkService {
     @Transactional(readOnly = true)
     @Override
     public WorkInfo getWorkInfo(long workId) {
-        WorkEntity workEntity = workRepository.findById(workId)
-                .orElseThrow(() -> {
-                    log.warn("Not found workEntity, workId = {}", workId);
-                    return new EntityNotFoundException("작품을 찾을 수 없습니다");
-                });
+        WorkEntity workEntity = findWorkEntity(workId);
 
         long episodeTotalCount = episodeRepository.countAllByWork_Id(workEntity.getId());
 
@@ -116,6 +113,98 @@ public class WorkServiceImpl implements WorkService {
     @Override
     public Page<EpisodeInfo> getEpisodeInfosByWork(long workId, Pageable pageable) {
         return episodeRepository.findAllByWorkId(workId, pageable);
+    }
+
+    @Transactional
+    @Override
+    public void clearWorkData(long workId) {
+        log.info("Clearing work data, workId = {}", workId);
+
+        // 삭제할 작품 Entity 조회
+        WorkEntity workEntity = findWorkEntity(workId);
+
+        // 작품 에피소드 삭제
+        deleteEpisodes(workId);
+
+        // 작품 정보 삭제
+        deleteWorkThumbnailImage(workEntity.getThumbnailImage());
+
+        workRepository.delete(workEntity);
+
+        // 스토리지 내 작품 하위 파일 제거
+        clearEpisodeImageFiles(workId);
+        log.info("Deleted work, workId = {}", workId);
+    }
+
+    /*
+    작품 썸네일 파일 삭제
+     */
+    private void deleteWorkThumbnailImage(ThumbnailImageEntity thumbnailImage) {
+        if (Objects.nonNull(thumbnailImage)) {
+            thumbnailImageRepository.delete(thumbnailImage);
+            fileStorageUploader.delete(thumbnailImage.getFileUrl());
+            log.debug("Deleted thumbnail_image, id = {}", thumbnailImage.getId());
+        }
+    }
+
+    /*
+    작품 내 에피소드 정보 삭제
+     */
+    private void deleteEpisodes(long workId) {
+        log.info("Deleting episodes, workId = {}", workId);
+
+        // 에피소드 데이터 삭제
+        List<EpisodeEntity> episodeEntityList = episodeRepository.findAllByWork_Id(workId);
+        List<Long> episodeIds = episodeEntityList.stream().map(EpisodeEntity::getId).toList();
+        deleteEpisodeImages(episodeIds, workId);
+        episodeRepository.deleteAllInBatch(episodeEntityList);
+
+        // 에피소드 별 썸네일 데이터 삭제
+        List<ThumbnailImageEntity> thumbnailImageEntities = episodeEntityList.stream()
+                .map(EpisodeEntity::getThumbnailImage)
+                .filter(Objects::nonNull)
+                .toList();
+        thumbnailImageRepository.deleteAllInBatch(thumbnailImageEntities);
+
+        log.info("Deleted episodes, workId = {}, deletedRows = {}", workId, episodeEntityList.size());
+    }
+
+    /*
+    에피소드 별 이미지 파일 삭제
+     */
+    private void deleteEpisodeImages(List<Long> episodeIds, long workId) {
+        if (episodeIds.isEmpty()) {
+            log.warn("No episodes found for workId = {}", workId);
+        } else {
+            log.info("Deleting episode_images, episodeCount = {}", episodeIds.size());
+
+            // 에피소드 이미지 메타데이터 제거
+            long deletedRows = episodeImageRepository.deleteAllByEpisodeIdIn(episodeIds);
+
+            log.info("Deleted episode_images, episodeCount = {}, deletedRows = {}", episodeIds.size(), deletedRows);
+        }
+    }
+
+    /*
+    작품에 해당하는 에피소드 이미지 파일 스토리지 제거
+     */
+    private void clearEpisodeImageFiles(long workId) {
+        Path targetPath = Path.of(WORKS_DIRECTORY, Long.toString(workId));
+
+        log.info("Deleting episode image files, path = {}", targetPath);
+        fileStorageUploader.delete(targetPath + "/");
+        log.info("Deleted episode image files, path = {}", targetPath);
+    }
+
+    /*
+    작품 조회
+     */
+    private WorkEntity findWorkEntity(long workId) {
+        return workRepository.findById(workId)
+                .orElseThrow(() -> {
+                    log.warn("Not found workEntity, workId = {}", workId);
+                    return new EntityNotFoundException("작품을 찾을 수 없습니다");
+                });
     }
 
     /*
@@ -213,7 +302,7 @@ public class WorkServiceImpl implements WorkService {
             }
         } catch (IOException e) {
             collectUploadedEpisodeFilesForRollback(uploadTasks, uploadedFiles);
-            throw new WorkUploadException("회차 tar 파일을 읽지 못했습니다.", e);
+            throw new WorkFileStorageException("회차 tar 파일을 읽지 못했습니다.", e);
         } catch (RuntimeException e) {
             collectUploadedEpisodeFilesForRollback(uploadTasks, uploadedFiles);
             throw e;
@@ -222,7 +311,7 @@ public class WorkServiceImpl implements WorkService {
         collectEpisodeUploadResults(uploadTasks, episodeDrafts, uploadedFiles);
 
         if (episodeDrafts.isEmpty()) {
-            throw new WorkUploadException("회차 tar 파일에서 저장할 이미지 리소스를 찾지 못했습니다.");
+            throw new WorkFileStorageException("회차 tar 파일에서 저장할 이미지 리소스를 찾지 못했습니다.");
         }
 
         persistEpisodes(workEntity, episodeDrafts);
@@ -253,7 +342,7 @@ public class WorkServiceImpl implements WorkService {
             uploadPermits.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new WorkUploadException("회차 이미지 업로드 작업이 중단되었습니다.", e);
+            throw new WorkFileStorageException("회차 이미지 업로드 작업이 중단되었습니다.", e);
         }
     }
 
@@ -276,14 +365,14 @@ public class WorkServiceImpl implements WorkService {
                 episodeDraft.addImage(uploadTask.archiveEntry().sortOrder(), storedEpisodeImage);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                uploadException = new WorkUploadException("회차 이미지 업로드 작업이 중단되었습니다.", e);
+                uploadException = new WorkFileStorageException("회차 이미지 업로드 작업이 중단되었습니다.", e);
                 cancelEpisodeUploadTasks(uploadTasks);
                 break;
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 RuntimeException currentException = cause instanceof RuntimeException runtimeException
                         ? runtimeException
-                        : new WorkUploadException("회차 이미지 업로드에 실패했습니다.", cause);
+                        : new WorkFileStorageException("회차 이미지 업로드에 실패했습니다.", cause);
                 if (uploadException == null) {
                     uploadException = currentException;
                 }
@@ -334,7 +423,7 @@ public class WorkServiceImpl implements WorkService {
      */
     private void validateEpisodeFile(MultipartFile episodeFile) {
         if (episodeFile == null || episodeFile.isEmpty()) {
-            throw new WorkUploadException("회차 tar 파일이 비어 있습니다.");
+            throw new WorkFileStorageException("회차 tar 파일이 비어 있습니다.");
         }
     }
 
@@ -392,7 +481,7 @@ public class WorkServiceImpl implements WorkService {
      */
     private String buildEpisodeDirectory(WorkEntity workEntity, int episodeNo) {
         if (workEntity.getId() == null) {
-            throw new WorkUploadException("회차 이미지 저장 경로를 구성할 작품 ID가 없습니다.");
+            throw new WorkFileStorageException("회차 이미지 저장 경로를 구성할 작품 ID가 없습니다.");
         }
 
         return WORKS_DIRECTORY + "/" + workEntity.getId() + "/" + episodeNo;
@@ -404,7 +493,7 @@ public class WorkServiceImpl implements WorkService {
                 .toArray(String[]::new);
 
         if (segments.length < 2) {
-            throw new WorkUploadException("회차 tar 구조가 올바르지 않습니다. entry = " + entryName);
+            throw new WorkFileStorageException("회차 tar 구조가 올바르지 않습니다. entry = " + entryName);
         }
 
         String fileName = segments[segments.length - 1];
@@ -426,7 +515,7 @@ public class WorkServiceImpl implements WorkService {
         try {
             return Integer.parseInt(episodeDirectory);
         } catch (NumberFormatException e) {
-            throw new WorkUploadException("회차 디렉터리명은 정수여야 합니다. entry = " + entryName, e);
+            throw new WorkFileStorageException("회차 디렉터리명은 정수여야 합니다. entry = " + entryName, e);
         }
     }
 
@@ -438,13 +527,13 @@ public class WorkServiceImpl implements WorkService {
         Matcher matcher = IMAGE_SORT_ORDER_PATTERN.matcher(Objects.requireNonNullElse(fileNameWithoutExtension, ""));
 
         if (!matcher.matches()) {
-            throw new WorkUploadException("회차 이미지 파일명에서 정렬 순서를 추출할 수 없습니다. entry = " + entryName);
+            throw new WorkFileStorageException("회차 이미지 파일명에서 정렬 순서를 추출할 수 없습니다. entry = " + entryName);
         }
 
         try {
             return Integer.parseInt(matcher.group(1));
         } catch (NumberFormatException e) {
-            throw new WorkUploadException("회차 이미지 정렬 순서가 올바르지 않습니다. entry = " + entryName, e);
+            throw new WorkFileStorageException("회차 이미지 정렬 순서가 올바르지 않습니다. entry = " + entryName, e);
         }
     }
 
@@ -453,13 +542,13 @@ public class WorkServiceImpl implements WorkService {
      */
     private void validateEpisodeImageFilename(String fileName, String entryName) {
         if (!StringUtils.hasText(fileName)) {
-            throw new WorkUploadException("회차 이미지 파일명이 비어 있습니다. entry = " + entryName);
+            throw new WorkFileStorageException("회차 이미지 파일명이 비어 있습니다. entry = " + entryName);
         }
 
         String extension = StringUtils.getFilenameExtension(fileName);
         if (!StringUtils.hasText(extension)
                 || !SUPPORTED_EPISODE_IMAGE_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT))) {
-            throw new WorkUploadException("지원하지 않는 회차 이미지 형식입니다. entry = " + entryName);
+            throw new WorkFileStorageException("지원하지 않는 회차 이미지 형식입니다. entry = " + entryName);
         }
     }
 
@@ -547,7 +636,7 @@ public class WorkServiceImpl implements WorkService {
          */
         private void validateSortOrderAvailable(int sortOrder, String entryName) {
             if (imagesBySortOrder.containsKey(sortOrder)) {
-                throw new WorkUploadException("동일 회차 내 중복된 이미지 순서가 존재합니다. entry = " + entryName);
+                throw new WorkFileStorageException("동일 회차 내 중복된 이미지 순서가 존재합니다. entry = " + entryName);
             }
         }
 
@@ -558,7 +647,7 @@ public class WorkServiceImpl implements WorkService {
         private UploadedEpisodeImage firstImage() {
             return imagesBySortOrder.values().stream()
                     .findFirst()
-                    .orElseThrow(() -> new WorkUploadException("에피소드 이미지 정보가 비어 있습니다."));
+                    .orElseThrow(() -> new WorkFileStorageException("에피소드 이미지 정보가 비어 있습니다."));
         }
 
         private List<UploadedEpisodeImage> images() {

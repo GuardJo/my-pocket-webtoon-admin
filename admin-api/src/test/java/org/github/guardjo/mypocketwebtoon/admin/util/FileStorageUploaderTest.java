@@ -8,19 +8,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 class FileStorageUploaderTest {
@@ -108,9 +110,6 @@ class FileStorageUploaderTest {
         @DisplayName("디렉터리 경로가 올바르지 않으면 예외가 발생한다")
         @Test
         void test_upload_fail_when_directory_is_invalid() {
-            LocalStorageUploader uploader = new LocalStorageUploader(
-                    new LocalStorageProperties(tempDir.toString(), UPLOAD_URL_PREFIX, null)
-            );
             MockMultipartFile file = new MockMultipartFile(
                     "file",
                     "episode.zip",
@@ -118,11 +117,11 @@ class FileStorageUploaderTest {
                     "zip-content".getBytes()
             );
 
-            assertThatThrownBy(() -> uploader.upload(file, "../outside"))
+            assertThatThrownBy(() -> fileStorageUploader.upload(file, "../outside"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 경로를 포함한 디렉터리는 사용할 수 없습니다.");
 
-            assertThatThrownBy(() -> uploader.upload("file".getBytes(), "../outside.jpg", "episodes"))
+            assertThatThrownBy(() -> fileStorageUploader.upload("file".getBytes(), "../outside.jpg", "episodes"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("업로드 파일명이 올바르지 않습니다.");
         }
@@ -130,6 +129,24 @@ class FileStorageUploaderTest {
         @DisplayName("저장된 파일 삭제 요청 시 로컬 스토리지에서 파일을 제거한다")
         @Test
         void test_delete_success() {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "thumbnail.png",
+                    "image/png",
+                    "thumbnail-content".getBytes()
+            );
+
+            StoredFile storedFile = fileStorageUploader.upload(file, "thumbnails");
+            Path savedFile = Path.of(storedFile.absolutePath());
+
+            fileStorageUploader.delete(storedFile);
+
+            assertThat(savedFile).doesNotExist();
+        }
+
+        @DisplayName("저장된 파일 경로 요청 시 로컬 스토리지에서 파일을 제거한다.")
+        @Test
+        void test_delete_file_path_success() {
             LocalStorageUploader uploader = new LocalStorageUploader(
                     new LocalStorageProperties(tempDir.toString(), UPLOAD_URL_PREFIX, null)
             );
@@ -141,10 +158,11 @@ class FileStorageUploaderTest {
             );
 
             StoredFile storedFile = uploader.upload(file, "thumbnails");
-            Path savedFile = Path.of(storedFile.absolutePath());
+            String filePath = storedFile.storedFilename();
 
-            uploader.delete(storedFile);
+            fileStorageUploader.delete(filePath);
 
+            Path savedFile = Path.of(filePath);
             assertThat(savedFile).doesNotExist();
         }
     }
@@ -293,5 +311,57 @@ class FileStorageUploaderTest {
             assertThat(request.key()).isEqualTo(storedFile.storedFilename());
         }
 
+        @DisplayName("저장된 파일 경로 요청 시 R2 스토리지에서 파일을 제거한다")
+        @Test
+        void test_delete_file_path_success() {
+            StoredFile storedFile = new StoredFile(
+                    "thumbnail.png",
+                    "thumbnails/stored-thumbnail.png",
+                    BUCKET_NAME + "/thumbnails/stored-thumbnail.png",
+                    PUBLIC_BASE_URL + "/" + BUCKET_NAME + "/thumbnails/stored-thumbnail.png",
+                    100L
+            );
+
+            fileStorageUploader.delete(storedFile.storedFilename());
+
+            var requestCaptor = org.mockito.ArgumentCaptor.forClass(DeleteObjectRequest.class);
+            verify(r2Client).deleteObject(requestCaptor.capture());
+
+            DeleteObjectRequest request = requestCaptor.getValue();
+            assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
+            assertThat(request.key()).isEqualTo(storedFile.storedFilename());
+        }
+
+        @DisplayName("저장된 파일의 상위 디렉터리 기반 하위 파일들을 R2 스토리지에서 제거한다")
+        @Test
+        void test_delete_directory_path_success() {
+            StoredFile storedFile = new StoredFile(
+                    null,
+                    "works/999/",
+                    null,
+                    null,
+                    0
+            );
+            ArgumentCaptor<ListObjectsV2Request> listRequestCaptor = org.mockito.ArgumentCaptor.forClass(ListObjectsV2Request.class);
+            ArgumentCaptor<DeleteObjectsRequest> requestCaptor = org.mockito.ArgumentCaptor.forClass(DeleteObjectsRequest.class);
+
+            given(r2Client.listObjectsV2(listRequestCaptor.capture())).willReturn(ListObjectsV2Response.builder()
+                    .prefix(storedFile.storedFilename())
+                    .contents(List.of(S3Object.builder()
+                            .size(1024L)
+                            .key("test-key")
+                            .build()))
+                    .build());
+            given(r2Client.deleteObjects(requestCaptor.capture())).willReturn(mock(DeleteObjectsResponse.class));
+
+            fileStorageUploader.delete(storedFile.storedFilename());
+
+            ListObjectsV2Request listRequest = listRequestCaptor.getValue();
+            assertThat(listRequest.bucket()).isEqualTo(BUCKET_NAME);
+            assertThat(listRequest.prefix()).isEqualTo(storedFile.storedFilename());
+
+            DeleteObjectsRequest request = requestCaptor.getValue();
+            assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
+        }
     }
 }

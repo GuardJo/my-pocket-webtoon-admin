@@ -29,4 +29,11 @@ public interface FileStorageUploader {
      * @param file 삭제할 저장 파일 정보
      */
     void delete(StoredFile file);
+
+    /**
+     * 주어진 저장 파일 경로를 기반으로 파일을 삭제한다.
+     *
+     * @param filePath 파일 저장 경로
+     */
+    void delete(String filePath);
 }

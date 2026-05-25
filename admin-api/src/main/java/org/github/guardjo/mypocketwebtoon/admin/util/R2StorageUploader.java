@@ -2,7 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.R2StorageProperties;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,8 +12,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,6 +20,7 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -63,7 +63,7 @@ public class R2StorageUploader extends AbstractStorageUploader {
             log.debug("Uploaded file, fileName = {}, storedName = {}", file.getOriginalFilename(), putObjectRequest.key());
             return generateStoredFile(putObjectRequest, file.getOriginalFilename(), file.getSize());
         } catch (IOException e) {
-            throw new WorkUploadException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkFileStorageException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
@@ -86,7 +86,7 @@ public class R2StorageUploader extends AbstractStorageUploader {
             log.debug("Uploaded fileContent, fileName = {}, storedName = {}", originalFilename, putObjectRequest.key());
             return generateStoredFile(putObjectRequest, originalFilename, putObjectRequest.contentLength());
         } catch (IOException e) {
-            throw new WorkUploadException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkFileStorageException("R2 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
@@ -96,19 +96,60 @@ public class R2StorageUploader extends AbstractStorageUploader {
 
         log.debug("Delete file, storedName = {}", objectKey);
 
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                .bucket(bucketName)
-                .key(objectKey)
-                .build();
+        // 상위 디렉터리채로 삭제
+        if (objectKey.endsWith("/")) {
+            String continuationToken = null;
+            do {
+                ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                        .bucket(bucketName)
+                        .prefix(objectKey)
+                        .continuationToken(continuationToken)
+                        .build();
+                ListObjectsV2Response listResponse = r2Client.listObjectsV2(listRequest);
 
-        r2Client.deleteObject(deleteObjectRequest);
+                List<ObjectIdentifier> deleteObjects = listResponse.contents().stream()
+                        .map(res -> {
+                            return ObjectIdentifier.builder()
+                                    .key(res.key())
+                                    .build();
+                        })
+                        .toList();
 
-        log.debug("Deleted storedName = {}", file.storedFilename());
+                if (!deleteObjects.isEmpty()) {
+                    DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                            .bucket(bucketName)
+                            .delete(Delete.builder()
+                                    .objects(deleteObjects)
+                                    .build())
+                            .build();
+
+                    r2Client.deleteObjects(deleteObjectsRequest);
+                }
+                continuationToken = listResponse.nextContinuationToken();
+            } while (continuationToken != null);
+        } else {
+            // 특정 파일 삭제
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .build();
+
+            r2Client.deleteObject(deleteObjectRequest);
+        }
+
+        log.debug("Deleted storedName = {}", objectKey);
+    }
+
+    @Override
+    StoredFile generateRemovingFile(String fileUrl) {
+        String objectKey = fileUrl.replace(publicBaseUrl + "/", "");
+
+        return new StoredFile(null, objectKey, objectKey, publicBaseUrl, 0);
     }
 
     /*
-    R2 스토리지 업로드 요청 객체 생성
-     */
+        R2 스토리지 업로드 요청 객체 생성
+         */
     private PutObjectRequest generatePutObjectRequest(MultipartFile file, String directory) {
         Path targetDirectory = generateTargetDirectory(directory);
 
@@ -152,8 +193,8 @@ public class R2StorageUploader extends AbstractStorageUploader {
     업로드 디렉터리 경로 구성
      */
     private Path generateTargetDirectory(String directory) {
-        String normaizedDirectory = normalizeDirectory(directory);
-        Path targetDirectory = Paths.get(normaizedDirectory).normalize();
+        String normalizedDirectory = normalizeDirectory(directory);
+        Path targetDirectory = Paths.get(normalizedDirectory).normalize();
 
         if (!targetDirectory.startsWith(targetDirectory)) {
             throw new IllegalArgumentException("업로드 디렉터리 경로가 올바르지 않습니다.");

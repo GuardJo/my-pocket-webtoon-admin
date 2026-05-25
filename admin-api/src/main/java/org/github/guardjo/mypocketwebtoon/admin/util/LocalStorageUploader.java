@@ -2,8 +2,9 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import lombok.RequiredArgsConstructor;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.LocalStorageProperties;
-import org.github.guardjo.mypocketwebtoon.admin.exception.WorkUploadException;
+import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,7 +22,7 @@ public class LocalStorageUploader extends AbstractStorageUploader {
     public StoredFile upload(MultipartFile file, String directory) {
         validateFile(file);
 
-        Path rootPath = Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
+        Path rootPath = getRootPath();
         String normalizedDirectory = normalizeDirectory(directory);
         Path targetDirectory = rootPath.resolve(normalizedDirectory).normalize();
 
@@ -37,7 +38,7 @@ public class LocalStorageUploader extends AbstractStorageUploader {
             Files.createDirectories(targetDirectory);
             file.transferTo(targetFile);
         } catch (IOException e) {
-            throw new WorkUploadException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkFileStorageException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
         }
 
         String publicUrl = buildPublicUrl(normalizedDirectory, storedFilename);
@@ -55,7 +56,7 @@ public class LocalStorageUploader extends AbstractStorageUploader {
     public StoredFile upload(byte[] content, String originalFilename, String directory) {
         validateContent(content);
 
-        Path rootPath = Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
+        Path rootPath = getRootPath();
         String normalizedDirectory = normalizeDirectory(directory);
         Path targetDirectory = rootPath.resolve(normalizedDirectory).normalize();
 
@@ -83,7 +84,7 @@ public class LocalStorageUploader extends AbstractStorageUploader {
                     content.length
             );
         } catch (IOException e) {
-            throw new WorkUploadException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
+            throw new WorkFileStorageException("로컬 스토리지에 파일을 저장하지 못했습니다.", e);
         }
     }
 
@@ -95,15 +96,29 @@ public class LocalStorageUploader extends AbstractStorageUploader {
 
         Path targetFile = Paths.get(file.absolutePath()).toAbsolutePath().normalize();
         try {
-            Files.deleteIfExists(targetFile);
+            if (Files.isDirectory(targetFile)) {
+                FileSystemUtils.deleteRecursively(targetFile);
+            } else {
+                Files.deleteIfExists(targetFile);
+            }
         } catch (IOException e) {
-            throw new WorkUploadException("로컬 스토리지에서 파일을 삭제하지 못했습니다.", e);
+            throw new WorkFileStorageException("로컬 스토리지에서 파일을 삭제하지 못했습니다.", e);
         }
+    }
+
+    @Override
+    StoredFile generateRemovingFile(String fileUrl) {
+        fileUrl = fileUrl.replace(localStorageProperties.publicBaseUrl(), "")
+                .replace(localStorageProperties.urlPrefix(), "");
+        Path rootPath = getRootPath();
+        String absolutePath = rootPath.resolve(normalizeDirectory(fileUrl)).normalize().toString();
+
+        return new StoredFile(null, null, absolutePath, null, 0);
     }
 
     /*
     저장된 파일에 대한 외부 접근 url 구성
-     */
+    */
     private String buildPublicUrl(String directory, String storedFilename) {
         StringBuilder pathBuilder = new StringBuilder(localStorageProperties.urlPrefix());
         if (!localStorageProperties.urlPrefix().endsWith("/")) {
@@ -119,5 +134,12 @@ public class LocalStorageUploader extends AbstractStorageUploader {
             return resourcePath;
         }
         return localStorageProperties.publicBaseUrl().replaceAll("/+$", "") + resourcePath;
+    }
+
+    /*
+    루트 경로 반환
+     */
+    private Path getRootPath() {
+        return Paths.get(localStorageProperties.uploadPath()).toAbsolutePath().normalize();
     }
 }
