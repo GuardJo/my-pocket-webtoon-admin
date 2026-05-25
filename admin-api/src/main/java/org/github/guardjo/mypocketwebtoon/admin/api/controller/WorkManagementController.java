@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.WorkApiDocs;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
@@ -79,6 +80,16 @@ public class WorkManagementController implements WorkApiDocs {
         log.info("DELETE: /api/v1/works/{}, workId = {}, userId = {}", workId, workId, principal.getUsername());
 
         workService.clearWorkData(workId);
+
+        return BaseResponse.defaultSuccessResponse();
+    }
+
+    @PatchMapping(value = "/{workId}")
+    @Override
+    public BaseResponse<String> updateWork(@PathVariable Long workId, @Valid @RequestBody WorkUpdateRequest workUpdateRequest) {
+        log.info("PATCH: /api/v1/works/{}, workId = {}", workId, workId);
+
+        workService.updateWork(workId, workUpdateRequest);
 
         return BaseResponse.defaultSuccessResponse();
     }

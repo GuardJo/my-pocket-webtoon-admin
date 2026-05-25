@@ -11,6 +11,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.EpisodeImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.ThumbnailImageEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.WorkEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.StoredFile;
@@ -134,6 +135,16 @@ public class WorkServiceImpl implements WorkService {
         // 스토리지 내 작품 하위 파일 제거
         clearEpisodeImageFiles(workId);
         log.info("Deleted work, workId = {}", workId);
+    }
+
+    @Transactional
+    @Override
+    public void updateWork(long workId, WorkUpdateRequest updateRequest) {
+        log.info("Updating work, workId = {}, updateRequest = {}", workId, updateRequest);
+
+        // TODO 기능 구현
+
+        log.info("Updated work, workId = {}, updateRequest = {}", workId, updateRequest);
     }
 
     /*

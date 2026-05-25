@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.api.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
@@ -30,4 +31,7 @@ public interface WorkApiDocs {
 
     @Operation(summary = "작품 삭제", description = "식별키에 해당하는 작품 및 관련 데이터를 삭제한다.")
     BaseResponse<String> removeWork(Long workId, @Parameter(hidden = true) AdminUserPrincipal principal);
+
+    @Operation(summary = "작품 정보 수정", description = "주어진 데이터들을 기반으로 작품 정보를 업데이트한다.")
+    BaseResponse<String> updateWork(Long workId, WorkUpdateRequest workUpdateRequest);
 }

@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
+import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUpdateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.WorkUploadRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.WorkInfo;
@@ -47,4 +48,12 @@ public interface WorkService {
      * @param workId 작품 식별키
      */
     void clearWorkData(long workId);
+
+    /**
+     * 식별키에 해당하는 작품 정보를 주어진 데이터 기반으로 수정한다.
+     *
+     * @param workId        작품 식별키
+     * @param updateRequest 업데이트할 데이터
+     */
+    void updateWork(long workId, WorkUpdateRequest updateRequest);
 }
