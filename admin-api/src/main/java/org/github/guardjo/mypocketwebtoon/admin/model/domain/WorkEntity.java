@@ -31,6 +31,7 @@ public class WorkEntity extends BaseEntity {
 
     @OneToOne
     @JoinColumn(name = "thumbnail_id")
+    @Setter
     private ThumbnailImageEntity thumbnailImage;
 
     @Column(nullable = false)

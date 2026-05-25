@@ -23,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(
             exception = {
+                    IllegalArgumentException.class,
                     ValidationException.class,
                     DataIntegrityViolationException.class
             }

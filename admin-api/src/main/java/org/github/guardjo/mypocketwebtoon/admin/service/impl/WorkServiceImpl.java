@@ -152,7 +152,34 @@ public class WorkServiceImpl implements WorkService {
     @Override
     public void updateWorkThumbnailImage(long workId, MultipartFile thumbnailImageFile) {
         log.info("Updating work thumbnail image, workId = {}", workId);
-        // TODO 기능 구현
+
+        WorkEntity workEntity = findWorkEntity(workId);
+        ThumbnailImageEntity oldThumbnailImage = workEntity.getThumbnailImage();
+
+        List<StoredFile> uploadedFiles = new ArrayList<>();
+        try {
+            log.debug("Uploading thumbnail image, workId = {}", workId);
+            StoredFile storedThumbnailFile = fileStorageUploader.upload(thumbnailImageFile, THUMBNAIL_DIRECTORY);
+            uploadedFiles.add(storedThumbnailFile);
+            ThumbnailImageEntity newThumbnailImage = saveNewThumbnailImage(storedThumbnailFile);
+            workEntity.setThumbnailImage(newThumbnailImage);
+            log.debug("Uploaded thumbnail image, workId = {}", workId);
+
+            if (Objects.nonNull(oldThumbnailImage)) {
+                log.debug("Deleting old thumbnail image, id = {}, url = {}", oldThumbnailImage.getId(), oldThumbnailImage.getFileUrl());
+                deleteWorkThumbnailImage(oldThumbnailImage);
+                log.debug("Deleted old thumbnail image, id = {}, url = {}", oldThumbnailImage.getId(), oldThumbnailImage.getFileUrl());
+            }
+        } catch (DataIntegrityViolationException | WorkFileStorageException e) {
+            log.error("Failed to upload thumbnail image, workId = {}", workId, e);
+            rollbackUploadedFiles(uploadedFiles);
+            throw e;
+        } catch (RuntimeException e) {
+            log.error("Failed to update work thumbnail image, workId = {}", workId, e);
+            rollbackUploadedFiles(uploadedFiles);
+            throw e;
+        }
+
         log.info("Updated work thumbnail image, workId = {}", workId);
     }
 

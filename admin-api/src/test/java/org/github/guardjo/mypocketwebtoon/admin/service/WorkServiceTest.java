@@ -628,6 +628,69 @@ class WorkServiceTest {
         then(workRepository).should().findById(eq(workId));
     }
 
+    @DisplayName("특정 작품 썸네일 갱신")
+    @Test
+    void test_updateWorkThumbnailImage() {
+        long workId = 1L;
+        ThumbnailImageEntity oldThumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/old-thumbnail.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "썸네일 갱신 대상 작품", oldThumbnailImage);
+        MockMultipartFile newThumbnailFile = mockThumbnailFile();
+        StoredFile storedThumbnailFile = storedThumbnailFile(
+                "new-thumbnail.png",
+                "stored-new-thumbnail.png",
+                "/uploads/thumbnail/stored-new-thumbnail.png",
+                newThumbnailFile.getSize()
+        );
+        ArgumentCaptor<ThumbnailImageEntity> thumbnailCaptor = ArgumentCaptor.forClass(ThumbnailImageEntity.class);
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(fileStorageUploader.upload(eq(newThumbnailFile), eq("thumbnail"))).willReturn(storedThumbnailFile);
+        given(thumbnailImageRepository.save(any(ThumbnailImageEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        workService.updateWorkThumbnailImage(workId, newThumbnailFile);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().upload(eq(newThumbnailFile), eq("thumbnail"));
+        then(thumbnailImageRepository).should().save(thumbnailCaptor.capture());
+        then(thumbnailImageRepository).should().delete(eq(oldThumbnailImage));
+        then(fileStorageUploader).should().delete(eq(oldThumbnailImage.getFileUrl()));
+        then(fileStorageUploader).should(never()).delete(eq(storedThumbnailFile));
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
+
+        ThumbnailImageEntity newThumbnailImage = thumbnailCaptor.getValue();
+        assertThat(newThumbnailImage.getFileUrl()).isEqualTo(storedThumbnailFile.publicUrl());
+        assertThat(newThumbnailImage.getFileSize()).isEqualTo(storedThumbnailFile.size());
+        assertThat(workEntity.getThumbnailImage()).isSameAs(newThumbnailImage);
+    }
+
+    @DisplayName("특정 작품 썸네일 갱신 - 신규 이미지 업로드 실패")
+    @Test
+    void test_updateWorkThumbnailImage_failed_to_upload_new_image() {
+        long workId = 1L;
+        ThumbnailImageEntity oldThumbnailImage = TestDataGenerator.thumbnailImageEntity("/uploads/thumbnail/old-thumbnail.png", 1024);
+        WorkEntity workEntity = TestDataGenerator.workEntity(workId, "썸네일 갱신 실패 대상 작품", oldThumbnailImage);
+        MockMultipartFile newThumbnailFile = mockThumbnailFile();
+        WorkFileStorageException expectedException = new WorkFileStorageException("thumbnail upload failed");
+
+        given(workRepository.findById(eq(workId))).willReturn(Optional.of(workEntity));
+        given(fileStorageUploader.upload(eq(newThumbnailFile), eq("thumbnail"))).willThrow(expectedException);
+
+        assertThatThrownBy(() -> workService.updateWorkThumbnailImage(workId, newThumbnailFile))
+                .isSameAs(expectedException);
+
+        then(workRepository).should().findById(eq(workId));
+        then(fileStorageUploader).should().upload(eq(newThumbnailFile), eq("thumbnail"));
+        then(fileStorageUploader).should(never()).delete(any(StoredFile.class));
+        then(fileStorageUploader).should(never()).delete(anyString());
+        then(thumbnailImageRepository).shouldHaveNoInteractions();
+        then(episodeRepository).shouldHaveNoInteractions();
+        then(episodeImageRepository).shouldHaveNoInteractions();
+
+        assertThat(workEntity.getThumbnailImage()).isSameAs(oldThumbnailImage);
+    }
+
     private void stubSavedWork(long workId) {
         given(workRepository.save(any(WorkEntity.class)))
                 .willAnswer(invocation -> {
@@ -657,6 +720,16 @@ class WorkServiceTest {
                             1024L
                     );
                 });
+    }
+
+    private StoredFile storedThumbnailFile(String originalFilename, String storedFilename, String publicUrl, long size) {
+        return new StoredFile(
+                originalFilename,
+                storedFilename,
+                "/tmp/storage/thumbnail/" + storedFilename,
+                publicUrl,
+                size
+        );
     }
 
     private WorkUploadRequest workUploadRequest(MockMultipartFile thumbnailFile) {
