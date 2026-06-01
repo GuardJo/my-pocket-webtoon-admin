@@ -4,7 +4,7 @@ export function proxy(request: NextRequest) {
     const {pathname} = request.nextUrl;
     const accessToken = request.cookies.get('accessToken')?.value;
 
-    if (!accessToken && pathname !== '/login') {
+    if (!accessToken && pathname !== '/login' && pathname !== '/auth/login') {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
 

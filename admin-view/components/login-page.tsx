@@ -5,8 +5,11 @@ import {Lock, Shield, User} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card} from '@/components/ui/card';
+import {useRouter} from "next/navigation";
 
 export default function LoginPage() {
+    const router = useRouter();
+
     const [adminId, setAdminId] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -14,9 +17,32 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // TODO 로그인 api 연동
-        console.log('Login submitted:', {email: adminId, password});
-        setTimeout(() => setIsLoading(false), 1000);
+
+        await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({username: adminId, password}),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    alert('로그인에 실패하였습니다.');
+                    return;
+                }
+
+                router.replace('/');
+            })
+            .catch(error => {
+                alert(error.message);
+                console.error('Error:', error);
+                return;
+            })
+            .finally(() => {
+                    console.log('Login submitted:', {email: adminId, password});
+                    setTimeout(() => setIsLoading(false), 1000);
+                }
+            );
     };
 
     return (
