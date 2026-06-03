@@ -1,10 +1,10 @@
 'use client';
 
-import {useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {BookOpen, MoreVertical, Settings, Shield, Users,} from 'lucide-react';
+import {BookOpen, MoreVertical, Settings, Shield, User, Users,} from 'lucide-react';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from '@/components/ui/dropdown-menu';
+import {useQuery} from "@tanstack/react-query";
 
 export type MenuItem = {
     label: string;
@@ -13,15 +13,15 @@ export type MenuItem = {
 }
 
 export default function SideMenuBar() {
-    const pathname = usePathname();
-
-    // TODO 유저 정보 조회해오기
-    const [adminUser] = useState({
-        name: 'Admin User',
-        role: 'Super Editor',
-        avatar: 'AU',
+    const {data, isLoading} = useQuery({
+        queryKey: ['admin-profile'],
+        queryFn: async () => {
+            const response = await fetch('/auth/me');
+            return response.json();
+        }
     });
 
+    const pathname = usePathname();
     const menuItems: MenuItem[] = [
         {
             label: '작품 관리',
@@ -88,13 +88,12 @@ export default function SideMenuBar() {
 
             <div className="px-4 py-4 border-t border-blue-600">
                 <div className="flex items-center gap-3">
-                    <div
+                    <User
                         className="w-10 h-10 bg-green-400 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                        {adminUser.avatar}
-                    </div>
+                    </User>
                     <div className="flex-1">
-                        <p className="text-sm font-semibold">{adminUser.name}</p>
-                        <p className="text-xs text-blue-200">{adminUser.role}</p>
+                        <p className="text-sm font-semibold">{isLoading ? 'loading...' : data?.data.id}</p>
+                        <p className="text-xs text-blue-200">{isLoading ? 'loading...' : data?.data.roleName}</p>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
