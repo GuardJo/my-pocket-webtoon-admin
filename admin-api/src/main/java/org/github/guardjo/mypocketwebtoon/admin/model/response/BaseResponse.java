@@ -11,13 +11,13 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class BaseResponse<T> {
     @Schema(description = "응답 상태", example = "200")
-    int status;
+    private int status;
 
     @Schema(description = "응답 상태 코드", example = "OK")
-    String statusCode;
+    private String statusCode;
 
     @Schema(description = "응답 데이터")
-    T data;
+    private T data;
 
     /**
      * 기본 성공 응답
