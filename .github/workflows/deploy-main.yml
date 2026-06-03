@@ -59,6 +59,8 @@ jobs:
                   value: ${{ secrets.R2_SECRET_KEY }}
                 - name: UPLOAD_CONCURRENCY
                   value: ${{ secrets.UPLOAD_CONCURRENCY }}
+                - name: FRONTEND_URL
+                  value: ${{ secrets.FRONTEND_URL }}
               buildenv: []
               ports: "8080"
               strategy: rolling
