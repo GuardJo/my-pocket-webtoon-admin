@@ -9,6 +9,8 @@ export function proxy(request: NextRequest) {
         loginUrl.searchParams.set('redirect', pathname);
 
         return NextResponse.redirect(loginUrl);
+    } else if (pathname === '/login' && accessToken) {
+        return NextResponse.redirect(new URL('/', request.url));
     }
 
     return NextResponse.next();
