@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.model.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import org.springframework.http.HttpStatus;
 
@@ -9,9 +10,14 @@ import org.springframework.http.HttpStatus;
 @Builder
 @Getter
 public class BaseResponse<T> {
-    int status;
-    String statusCode;
-    T data;
+    @Schema(description = "응답 상태", example = "200")
+    private int status;
+
+    @Schema(description = "응답 상태 코드", example = "OK")
+    private String statusCode;
+
+    @Schema(description = "응답 데이터")
+    private T data;
 
     /**
      * 기본 성공 응답

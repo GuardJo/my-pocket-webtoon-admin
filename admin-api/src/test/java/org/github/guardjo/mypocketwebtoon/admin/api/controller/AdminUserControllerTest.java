@@ -6,18 +6,22 @@ import org.github.guardjo.mypocketwebtoon.admin.config.StaticResourceConfig;
 import org.github.guardjo.mypocketwebtoon.admin.config.TestSecurityConfig;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.LoginRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminProfileInfo;
+import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.AdminUserService;
+import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,6 +33,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -187,5 +193,26 @@ class AdminUserControllerTest {
         assertThat(actual.getData()).isEqualTo("요청 값이 올바르지 않습니다.");
 
         then(adminUserService).should(never()).getAccessToken(eq(loginRequest.id()), eq(loginRequest.password()));
+    }
+
+    @DisplayName("GET: /api/v1/auth/me")
+    @Test
+    void test_getMyProfileInfo() throws Exception {
+        AdminUserPrincipal testUser = new AdminUserPrincipal(AdminInfo.of(TestDataGenerator.adminInfoEntity("test", "tester")));
+        AdminProfileInfo expected = AdminProfileInfo.of(testUser.getAdminInfo());
+
+        String response = mockMvc.perform(get("/api/v1/auth/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(user(testUser)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, AdminProfileInfo.class);
+        BaseResponse<AdminProfileInfo> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getData()).isEqualTo(expected);
     }
 }
