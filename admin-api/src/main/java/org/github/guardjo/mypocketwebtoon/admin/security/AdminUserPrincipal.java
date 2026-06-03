@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.security;
 
+import lombok.Getter;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class AdminUserPrincipal implements UserDetails {
+    @Getter
     private final AdminInfo adminInfo;
 
     public AdminUserPrincipal(AdminInfo adminInfo) {
