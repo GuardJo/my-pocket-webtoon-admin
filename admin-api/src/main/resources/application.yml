@@ -43,3 +43,18 @@ storage:
 logging:
   level:
     org.github.guardjo.mypocketwebtoon.admin: debug
+cors:
+  allow-credentials: true
+  allowed-origins:
+    - ${FRONTEND_URL:http://localhost:3000}
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - PATCH
+    - DELETE
+    - OPTIONS
+  allowed-headers:
+    - Content-Type
+    - Authorization
+  max-age: 3600
