@@ -6,12 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.AdminUserApiDocs;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.LoginRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminProfileInfo;
+import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.AdminUserService;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -32,5 +32,15 @@ public class AdminUserController implements AdminUserApiDocs {
                 .statusCode(HttpStatus.OK.name())
                 .data(token)
                 .build();
+    }
+
+    @GetMapping("/me")
+    @Override
+    public BaseResponse<AdminProfileInfo> getMyProfileInfo(@AuthenticationPrincipal AdminUserPrincipal principal) {
+        log.info("GET : /api/v1/auth/me, userId = {}", principal.getUsername());
+
+        AdminProfileInfo profileInfo = AdminProfileInfo.of(principal.getAdminInfo());
+
+        return BaseResponse.of(HttpStatus.OK, profileInfo);
     }
 }

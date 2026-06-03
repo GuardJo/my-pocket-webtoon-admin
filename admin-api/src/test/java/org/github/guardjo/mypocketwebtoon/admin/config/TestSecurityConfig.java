@@ -13,6 +13,7 @@ public class TestSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(registry -> {
             registry.requestMatchers("/api/v1/auth/login").permitAll();
+            registry.anyRequest().authenticated();
         });
 
         return http.build();
