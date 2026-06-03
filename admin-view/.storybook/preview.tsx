@@ -1,11 +1,21 @@
 import type {Preview} from '@storybook/nextjs-vite'
 import '../app/globals.css'
 import {initialize, mswLoader} from "msw-storybook-addon";
+import QueryProvider from "../providers/query-provider";
 
 initialize();
 
 const preview: Preview = {
     loaders: [mswLoader],
+    decorators: [
+        (Story) => {
+            return (
+                <QueryProvider>
+                    <Story/>
+                </QueryProvider>
+            )
+        }
+    ],
     parameters: {
         controls: {
             matchers: {
