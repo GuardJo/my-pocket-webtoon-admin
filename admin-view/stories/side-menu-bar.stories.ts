@@ -8,7 +8,7 @@ const meta = {
     parameters: {
         msw: {
             handlers: [
-                http.get('/auth/me', () => {
+                http.get('/api/auth/me', () => {
                     return Response.json({
                         'status': 200,
                         'statusCode': 'OK',

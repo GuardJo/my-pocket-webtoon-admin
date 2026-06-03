@@ -16,7 +16,7 @@ export default function SideMenuBar() {
     const {data, isLoading} = useQuery({
         queryKey: ['admin-profile'],
         queryFn: async () => {
-            const response = await fetch('/auth/me');
+            const response = await fetch('/api/auth/me');
             return response.json();
         }
     });
