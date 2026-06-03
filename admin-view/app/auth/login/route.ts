@@ -4,13 +4,17 @@ import {authService} from "@/lib/auth-service";
 export async function POST(request: NextRequest) {
     const loginRequestContent = await request.json();
 
+    if (!loginRequestContent.username || !loginRequestContent.password) {
+        return NextResponse.json(
+            {message: '로그인 요청 정보가 올바르지 않습니다.'},
+            {status: 400}
+        )
+    }
+
     const loginResponse = await authService.login(loginRequestContent.username, loginRequestContent.password);
 
     if (loginResponse.status !== 200) {
-        return NextResponse.json(
-            {message: '로그인에 실패하였습니다.'},
-            {status: loginResponse.status}
-        );
+        return NextResponse.json(loginResponse, {status: 401});
     }
 
     const accessToken = loginResponse.data;

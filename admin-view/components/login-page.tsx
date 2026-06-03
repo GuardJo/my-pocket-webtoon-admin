@@ -6,6 +6,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card} from '@/components/ui/card';
 import {useRouter} from "next/navigation";
+import {BaseResponse} from "@/lib/models";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -18,31 +19,29 @@ export default function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        await fetch('/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({username: adminId, password}),
-        })
-            .then(response => {
-                if (!response.ok) {
-                    alert('로그인에 실패하였습니다.');
-                    return;
-                }
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({username: adminId, password}),
+            });
 
-                router.replace('/');
-            })
-            .catch(error => {
-                alert(error.message);
-                console.error('Error:', error);
+            if (!response.ok) {
+                const errorBody = await response.json() as BaseResponse<string>;
+                alert(errorBody.data ?? errorBody.data ?? '로그인에 실패하였습니다.');
                 return;
-            })
-            .finally(() => {
-                    console.log('Login submitted:', {email: adminId, password});
-                    setTimeout(() => setIsLoading(false), 1000);
-                }
-            );
+            }
+
+            router.replace('/');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+            alert(message);
+            console.error('Error:', error);
+        } finally {
+            setTimeout(() => setIsLoading(false), 1000);
+        }
     };
 
     return (
