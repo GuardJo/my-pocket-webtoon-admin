@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.github.guardjo.mypocketwebtoon.admin.config.properties.CorsProperties;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.LocalStorageProperties;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
@@ -31,6 +32,9 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.nio.charset.StandardCharsets;
 
@@ -43,6 +47,7 @@ public class SecurityConfig {
     private final LocalStorageProperties localStorageProperties;
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
+    private final CorsProperties corsProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -61,6 +66,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(HttpBasicConfigurer::disable)
                 .csrf(CsrfConfigurer::disable)
+                .cors(configure -> configure.configurationSource(corsConfigurationSource()))
                 .formLogin(FormLoginConfigurer::disable)
                 .exceptionHandling(customizer -> {
                     customizer.authenticationEntryPoint(authenticationEntryPoint());
@@ -112,5 +118,21 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+
+        corsConfiguration.setAllowedOrigins(corsProperties.allowedOrigins());
+        corsConfiguration.setAllowedMethods(corsProperties.allowedMethods());
+        corsConfiguration.setAllowedHeaders(corsProperties.allowedHeaders());
+        corsConfiguration.setAllowCredentials(corsProperties.allowCredentials());
+        corsConfiguration.setMaxAge(corsProperties.maxAge());
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+
+        return source;
     }
 }
