@@ -11,3 +11,19 @@ export async function toBaseResponse<T>(response: Response): Promise<BaseRespons
         throw new Error('Invalid response format');
     }
 }
+
+/*
+작품 연재 상태
+ */
+export type SerialState = 'PUBLISHED' | 'SUSPENDED' | 'COMPLETED'
+
+/*
+작품 정보
+ */
+export interface WorkInfo {
+    id: number,
+    thumbnail: string | null,
+    title: string,
+    serialState: SerialState,
+    visibility: boolean
+}
