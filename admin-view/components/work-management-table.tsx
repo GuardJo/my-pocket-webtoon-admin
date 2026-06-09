@@ -6,34 +6,9 @@ import {Button} from '@/components/ui/button';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
 import {Badge} from '@/components/ui/badge';
 import {Eye, EyeClosed, Plus} from 'lucide-react';
-import {SerialState, WorkInfo} from "@/lib/models";
+import {BaseResponse, Pageable, SerialState, WorkInfo} from "@/lib/models";
 import Image from "next/image";
-
-
-// TODO API 연동하기
-const mockWorks: WorkInfo[] = [
-    {
-        id: 1,
-        thumbnail: 'http://localhost:8080/uploads/thumbnail/afab1c268eb049ef9733be35c223cdd1.jpg',
-        title: '도심 속의 그림자',
-        serialState: 'PUBLISHED',
-        visibility: true,
-    },
-    {
-        id: 2,
-        thumbnail: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=100&h=100&fit=crop',
-        title: '달빛의 조각가',
-        serialState: 'SUSPENDED',
-        visibility: true,
-    },
-    {
-        id: 3,
-        thumbnail: null,
-        title: '심야의 도서관',
-        serialState: 'COMPLETED',
-        visibility: false,
-    },
-];
+import {useQuery} from "@tanstack/react-query";
 
 function getStatusBadgeColor(
     status: SerialState
@@ -61,12 +36,27 @@ function getStatusLabel(status: SerialState): string {
 
 export default function WorkManagementTable() {
     const router = useRouter();
-    const [currentPage, setCurrentPage] = useState(1);
-
-    // TODO API 연동하기
     const itemsPerPage = 10;
-    const totalItems = 128;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const [currentPage, setCurrentPage] = useState(0);
+
+    const {data} = useQuery<BaseResponse<Pageable<WorkInfo>>>({
+        queryKey: ['getWorks', currentPage, itemsPerPage],
+        queryFn: async () => {
+            const response = await fetch(`/api/works?page=${currentPage}&size=${itemsPerPage}`);
+
+            if (!response.ok) {
+                throw new Error('작품 목록 조회에 실패하였습니다.');
+            }
+
+            return response.json();
+        },
+    });
+
+    const works: WorkInfo[] = data?.data.content ?? [];
+    const pageInfo = data?.data.page;
+    const totalItems = pageInfo?.totalElements ?? 0;
+    const totalPages = pageInfo?.totalPages ?? 0;
+
 
     return (
         <div className="flex-1 flex flex-col bg-gray-50">
@@ -111,7 +101,7 @@ export default function WorkManagementTable() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockWorks.map((work) => (
+                            {works.map((work) => (
                                 <TableRow
                                     key={work.id}
                                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -122,7 +112,7 @@ export default function WorkManagementTable() {
                                             <Image
                                                 width={64}
                                                 height={64}
-                                                src={work.thumbnail ?? '/images/default-nob-image.png'}
+                                                src={work.thumbnailUrl ?? '/images/default-nob-image.png'}
                                                 alt={work.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -154,23 +144,23 @@ export default function WorkManagementTable() {
                 {/* Pagination */}
                 <div className="flex items-center justify-between mt-6">
                     <p className="text-sm text-gray-600">
-                        Showing 1 to {itemsPerPage} of {totalItems} results
+                        Showing {currentPage + 1} to {itemsPerPage} of {totalItems} results
                     </p>
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
-                            disabled={currentPage === 1}
-                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 0}
+                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                         >
                             Previous
                         </Button>
                         {Array.from({length: Math.min(3, totalPages)}, (_, i) => (
                             <Button
                                 key={i + 1}
-                                variant={currentPage === i + 1 ? 'default' : 'outline'}
-                                onClick={() => setCurrentPage(i + 1)}
+                                variant={currentPage === i ? 'default' : 'outline'}
+                                onClick={() => setCurrentPage(i)}
                                 className={
-                                    currentPage === i + 1 ? 'bg-blue-700 text-white' : ''
+                                    currentPage === i ? 'bg-blue-700 text-white' : ''
                                 }
                             >
                                 {i + 1}
@@ -179,7 +169,7 @@ export default function WorkManagementTable() {
                         {totalPages > 3 && <span className="text-gray-600">...</span>}
                         <Button
                             variant="outline"
-                            disabled={currentPage === totalPages}
+                            disabled={(currentPage + 1) === totalPages}
                             onClick={() =>
                                 setCurrentPage(Math.min(totalPages, currentPage + 1))
                             }

@@ -4,6 +4,18 @@ export interface BaseResponse<T> {
     data: T
 }
 
+export interface Pageable<T> {
+    content: T[],
+    page: PageInfo
+}
+
+export interface PageInfo {
+    size: number,
+    page: number,
+    totalElements: number,
+    totalPages: number,
+}
+
 export async function toBaseResponse<T>(response: Response): Promise<BaseResponse<T>> {
     try {
         return await response.json() as BaseResponse<T>;
@@ -22,7 +34,7 @@ export type SerialState = 'PUBLISHED' | 'SUSPENDED' | 'COMPLETED'
  */
 export interface WorkInfo {
     id: number,
-    thumbnail: string | null,
+    thumbnailUrl: string | null,
     title: string,
     serialState: SerialState,
     visibility: boolean
