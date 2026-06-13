@@ -144,7 +144,7 @@ export default function WorkManagementTable() {
                 {/* Pagination */}
                 <div className="flex items-center justify-between mt-6">
                     <p className="text-sm text-gray-600">
-                        Showing {currentPage + 1} to {itemsPerPage} of {totalItems} results
+                        Showing {currentPage + 1} to {works.length} of {totalItems} results
                     </p>
                     <div className="flex items-center gap-2">
                         <Button
