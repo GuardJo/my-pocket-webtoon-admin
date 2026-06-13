@@ -15,7 +15,7 @@ export const LoginSuccess: Story = {
     parameters: {
         msw: {
             handlers: [
-                http.post('/auth/login', () => {
+                http.post('/api/auth/login', () => {
                     return HttpResponse.json({success: true});
                 })
             ]
@@ -27,7 +27,7 @@ export const LoginFailed: Story = {
     parameters: {
         msw: {
             handlers: [
-                http.post('/auth/login', () => {
+                http.post('/api/auth/login', () => {
                     return HttpResponse.json({
                         status: 401,
                         statusCode: 'UNAUTHORIZATION',
