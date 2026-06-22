@@ -46,7 +46,7 @@ export default function WorkManagementTable() {
             const response = await workService.getWorks(currentPage, itemsPerPage);
 
             if (response.status !== 200) {
-                console.log(`Error, code: ${response.status}(${response.statusCode}, cause: ${response.data})`)
+                console.error('Error:', response.status, ', cause: ', response.data ?? 'no data');
                 throw new Error('작품 목록 조회에 실패하였습니다.');
             }
 
