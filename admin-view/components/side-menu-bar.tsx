@@ -5,6 +5,7 @@ import {usePathname} from 'next/navigation';
 import {BookOpen, MoreVertical, Settings, Shield, User, Users,} from 'lucide-react';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from '@/components/ui/dropdown-menu';
 import {useQuery} from "@tanstack/react-query";
+import {adminService} from "@/lib/admin-service";
 
 export type MenuItem = {
     label: string;
@@ -15,14 +16,16 @@ export type MenuItem = {
 export default function SideMenuBar() {
     const {data, isLoading} = useQuery({
         queryKey: ['admin-profile'],
-        queryFn: async () => {
-            const response = await fetch('/api/auth/me');
-
-            if (!response.ok) {
-                throw new Error('프로필 정보를 가져오는데 실패했습니다.');
-            }
-
-            return response.json();
+        queryFn: () => {
+            return adminService.me()
+                .then(
+                    (response) => response.data,
+                    (error) => {
+                        throw new Error(error.response.data.message);
+                    }
+                ).catch((error) => {
+                    throw new Error(error.message);
+                });
         }
     });
 
@@ -97,8 +100,8 @@ export default function SideMenuBar() {
                         className="w-10 h-10 bg-green-400 rounded-full flex items-center justify-center text-sm font-bold text-white">
                     </User>
                     <div className="flex-1">
-                        <p className="text-sm font-semibold">{isLoading ? 'loading...' : data?.data?.id}</p>
-                        <p className="text-xs text-blue-200">{isLoading ? 'loading...' : data?.data?.roleName}</p>
+                        <p className="text-sm font-semibold">{isLoading ? 'loading...' : data!.id}</p>
+                        <p className="text-xs text-blue-200">{isLoading ? 'loading...' : data!.roleName}</p>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

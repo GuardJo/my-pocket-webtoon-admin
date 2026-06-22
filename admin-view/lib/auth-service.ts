@@ -18,18 +18,6 @@ export const authService = {
         });
 
         return toBaseResponse<string>(response);
-    },
-    me: async (accessToken: string): Promise<BaseResponse<AdminProfile>> => {
-
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
-            },
-        });
-
-        return toBaseResponse<AdminProfile>(response);
     }
 }
 
@@ -37,10 +25,4 @@ export const authService = {
 export interface LoginRequest {
     id: string;
     password: string;
-}
-
-// 관리자 프로필 정보
-export interface AdminProfile {
-    id: string;
-    roleName: string;
 }
