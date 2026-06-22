@@ -9,6 +9,7 @@ import {Eye, EyeClosed, Plus} from 'lucide-react';
 import {BaseResponse, Pageable, SerialState, WorkInfo} from "@/lib/models";
 import Image from "next/image";
 import {useQuery} from "@tanstack/react-query";
+import {workService} from "@/lib/work-service";
 
 function getStatusBadgeColor(
     status: SerialState
@@ -42,13 +43,14 @@ export default function WorkManagementTable() {
     const {data} = useQuery<BaseResponse<Pageable<WorkInfo>>>({
         queryKey: ['getWorks', currentPage, itemsPerPage],
         queryFn: async () => {
-            const response = await fetch(`/api/works?page=${currentPage}&size=${itemsPerPage}`);
+            const response = await workService.getWorks(currentPage, itemsPerPage);
 
-            if (!response.ok) {
+            if (response.status !== 200) {
+                console.error('Error:', response.status, ', cause: ', response.data ?? 'no data');
                 throw new Error('작품 목록 조회에 실패하였습니다.');
             }
 
-            return response.json();
+            return response;
         },
     });
 
