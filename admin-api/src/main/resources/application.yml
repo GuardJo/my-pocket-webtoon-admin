@@ -32,7 +32,7 @@ storage:
   local:
     upload-path: "./storage"
     url-prefix: "/uploads"
-    public-base-url: "http://localhost:8080"
+    public-base-url: ${LOCAL_PUBLIC_URL:http://localhost:8080}
   r2:
     account-id: ${R2_ACCOUNT_ID:test-id}
     bucket-name: ${R2_BUCKET_NAME:test-bucket}
