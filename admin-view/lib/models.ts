@@ -28,6 +28,11 @@ export async function toBaseResponse<T>(response: Response): Promise<BaseRespons
 작품 연재 상태
  */
 export type SerialState = 'PUBLISHED' | 'SUSPENDED' | 'COMPLETED'
+export const SERIAL_STATE_LABEL = {
+    PUBLISHED: '연재중',
+    SUSPENDED: '휴재',
+    COMPLETED: '완결'
+} satisfies Record<SerialState, string>
 
 /*
 작품 정보
