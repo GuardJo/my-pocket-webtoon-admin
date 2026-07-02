@@ -26,7 +26,7 @@ export default function WorkRegistration() {
         title: '',
         description: '',
         visibility: true,
-        serialState: '',
+        serialState: 'PUBLISHED',
         thumbnailFile: null as File | null,
         episodeFile: null as File | null,
     });
@@ -96,9 +96,19 @@ export default function WorkRegistration() {
             return;
         }
 
-        // TODO formData 값 검증 추가하기
+        if (!formData.title.trim()) {
+            alert('작품 제목을 입력해 주세요.');
+            return;
+        }
+
+        if (!formData.episodeFile) {
+            alert('에피소드 데이터를 업로드해 주세요.');
+            return;
+        }
+
         // TODO API 연동하기
         console.log('Form submitted:', {formData, action});
+        router.push('/works');
     };
 
     return (
