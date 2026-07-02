@@ -31,6 +31,7 @@ export default function WorkRegistration() {
         episodeFile: null as File | null,
     });
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>();
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -90,9 +91,13 @@ export default function WorkRegistration() {
         setFormData((prev) => ({...prev, episodeFile: null}));
     };
 
-    const handleSubmit = (action: 'register' | 'draft' | 'cancel') => {
+    const handleSubmit = async (action: 'register' | 'draft' | 'cancel') => {
         if (action === 'cancel') {
             router.back();
+            return;
+        }
+
+        if (isUploading) {
             return;
         }
 
@@ -106,9 +111,16 @@ export default function WorkRegistration() {
             return;
         }
 
-        // TODO API 연동하기
-        console.log('Form submitted:', {formData, action});
-        router.push('/works');
+        setIsUploading(true);
+
+        try {
+            // TODO API 연동하기
+            console.log('Form submitted:', {formData, action});
+            router.push('/works');
+        } catch (error) {
+            setIsUploading(false);
+            throw error;
+        }
     };
 
     return (
@@ -382,9 +394,11 @@ export default function WorkRegistration() {
                     <div className="mt-12 flex flex-col gap-3">
                         <Button
                             onClick={() => handleSubmit('register')}
-                            className="w-full bg-blue-900 hover:bg-blue-950 text-white py-6 text-base font-semibold rounded-lg"
+                            disabled={isUploading}
+                            aria-busy={isUploading}
+                            className="w-full bg-blue-900 hover:bg-blue-950 text-white py-6 text-base font-semibold rounded-lg disabled:cursor-not-allowed disabled:opacity-70"
                         >
-                            작품 등록하기
+                            {isUploading ? '작품 등록 중...' : '작품 등록하기'}
                         </Button>
                         <button
                             onClick={() => handleSubmit('cancel')}
