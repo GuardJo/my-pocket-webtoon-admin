@@ -8,6 +8,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/
 import {ArrowLeft, CheckCircle2, FileArchive, Upload, X} from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {SERIAL_STATE_LABEL, SerialState} from "@/lib/models";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {fileUploadService, WorkUploadFormData} from "@/lib/file-upload-service";
 
 const serialStates: SerialState[] = [
     'COMPLETED',
@@ -22,7 +24,7 @@ const visibilities = [
 
 export default function WorkRegistration() {
     const router = useRouter();
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<WorkUploadFormData>({
         title: '',
         description: '',
         visibility: true,
@@ -32,6 +34,33 @@ export default function WorkRegistration() {
     });
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>();
     const [isUploading, setIsUploading] = useState(false);
+
+    const queryClient = useQueryClient();
+    const uploadWorkMutation = useMutation({
+        mutationKey: ['uploadWork'],
+        mutationFn: (variables: WorkUploadFormData) => fileUploadService.uploadWork(variables),
+        onSuccess: async data => {
+            setIsUploading(false);
+
+            if (data.status === 200) {
+                await queryClient.invalidateQueries({queryKey: ['getWorks']});
+
+                console.log('Upload successful:', data);
+
+                alert('작품 업로드가 완료되었습니다');
+                router.push('/works');
+            } else {
+                console.error('Upload failed:', data);
+                alert(data.data);
+            }
+        },
+        onError: error => {
+            console.error('Upload error:', error);
+            setIsUploading(false);
+
+            alert('직품 업로드에 실패하였습니다.');
+        }
+    });
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -52,7 +81,7 @@ export default function WorkRegistration() {
         } else if (name === 'serialState') {
             setFormData((prev) => ({
                 ...prev,
-                [name]: value,
+                serialState: value as SerialState,
             }));
         }
     };
@@ -113,14 +142,8 @@ export default function WorkRegistration() {
 
         setIsUploading(true);
 
-        try {
-            // TODO API 연동하기
-            console.log('Form submitted:', {formData, action});
-            router.push('/works');
-        } catch (error) {
-            setIsUploading(false);
-            throw error;
-        }
+        console.log('Form submitted:', {formData, action});
+        uploadWorkMutation.mutate(formData);
     };
 
     return (
