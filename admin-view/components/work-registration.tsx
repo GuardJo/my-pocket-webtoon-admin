@@ -32,7 +32,7 @@ export default function WorkRegistration() {
         thumbnailFile: null as File | null,
         episodeFile: null as File | null,
     });
-    const [thumbnailPreview, setThumbnailPreview] = useState<string | null>();
+    const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
     const queryClient = useQueryClient();
@@ -110,7 +110,7 @@ export default function WorkRegistration() {
     const handleRemoveThumbnail = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setFormData((prev) => ({...prev, thumbnail: null}));
+        setFormData((prev) => ({...prev, thumbnailFile: null}));
         setThumbnailPreview(null);
     };
 
