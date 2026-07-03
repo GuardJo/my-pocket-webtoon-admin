@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.security;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -55,6 +57,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
 
-        return null;
+        Cookie[] cookies = request.getCookies();
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> cookie.getName().equals("accessToken"))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
     }
 }
