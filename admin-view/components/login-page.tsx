@@ -6,7 +6,6 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card} from '@/components/ui/card';
 import {useRouter} from "next/navigation";
-import {BaseResponse} from "@/lib/models";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -29,8 +28,9 @@ export default function LoginPage() {
             });
 
             if (!response.ok) {
-                const errorBody = await response.json() as BaseResponse<string>;
-                alert(errorBody.data ?? errorBody.data ?? '로그인에 실패하였습니다.');
+                const errorBody = response.statusText;
+                console.error('Error:', response);
+                alert(errorBody ?? '로그인에 실패하였습니다.');
                 return;
             }
 
