@@ -1,6 +1,7 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.security.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.service.impl.AdminUserServiceImpl;
@@ -56,6 +57,23 @@ class AdminUserServiceTest {
         then(adminInfoRepository).should().findById(eq(TEST_ADMIN.getId()));
         then(passwordEncoder).should().matches(eq(testPassword), eq(encodePassword));
         then(jwtProvider).should().generateAccessToken(eq(TEST_ADMIN));
+    }
+
+    @DisplayName("임시 토큰 반환 성공")
+    @Test
+    void test_getTemporarilyAccessToken_success() {
+        AdminInfo adminInfo = AdminInfo.of(TEST_ADMIN);
+        String expectedToken = "temporarily-access-token";
+
+        given(jwtProvider.generateTemporarilyAccessToken(eq(adminInfo))).willReturn(expectedToken);
+
+        String actual = adminUserService.getTemporarilyAccessToken(adminInfo);
+
+        assertThat(actual).isEqualTo(expectedToken);
+
+        then(jwtProvider).should().generateTemporarilyAccessToken(eq(adminInfo));
+        then(adminInfoRepository).shouldHaveNoInteractions();
+        then(passwordEncoder).shouldHaveNoInteractions();
     }
 
     @DisplayName("로그인 실패 - 아이디 조회 실패")

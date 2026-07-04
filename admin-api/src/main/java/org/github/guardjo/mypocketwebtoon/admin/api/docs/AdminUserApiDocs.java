@@ -15,4 +15,7 @@ public interface AdminUserApiDocs {
 
     @Operation(summary = "본인 정보 조회", description = "현재 접속 회원에 대한 기본 정보를 반환한다.")
     BaseResponse<AdminProfileInfo> getMyProfileInfo(@Parameter(hidden = true) AdminUserPrincipal principal);
+
+    @Operation(summary = "파일업로드용 토큰 발급", description = "현재 인증 정보 기반으로 파일 업로드용 인증 토큰을 반환한다.")
+    BaseResponse<String> getFileUploadToken(@Parameter(hidden = true) AdminUserPrincipal principal);
 }
