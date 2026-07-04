@@ -20,8 +20,8 @@ public class JwtProvider {
     private final static String USER_ROLE_KEY = "role";
 
     private final SecretKey secretKey;
-    private final Long expirationMillis;
-    private final Long expirationTempMillis;
+    private final long expirationMillis;
+    private final long expirationTempMillis;
 
     public JwtProvider(JwtProperties jwtProperties) {
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));

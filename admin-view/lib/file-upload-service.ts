@@ -8,7 +8,7 @@ const uploadBaseUrl = process.env.NEXT_PUBLIC_UPLOAD_BASE_URL;
 export const fileUploadService = {
     uploadWork: async (uploadFormData: WorkUploadFormData): Promise<BaseResponse<string>> => {
         const getTokenResponse = await fileUploadService.getUploadToken();
-        if (getTokenResponse.status !== 200) {
+        if (getTokenResponse.status !== 200 || !getTokenResponse.data) {
             throw new Error('Failed to get upload token');
         }
         const uploadToken = getTokenResponse.data;
