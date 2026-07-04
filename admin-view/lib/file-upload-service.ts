@@ -7,6 +7,12 @@ const uploadBaseUrl = process.env.NEXT_PUBLIC_UPLOAD_BASE_URL;
  */
 export const fileUploadService = {
     uploadWork: async (uploadFormData: WorkUploadFormData): Promise<BaseResponse<string>> => {
+        const getTokenResponse = await fileUploadService.getUploadToken();
+        if (getTokenResponse.status !== 200) {
+            throw new Error('Failed to get upload token');
+        }
+        const uploadToken = getTokenResponse.data;
+
         const formData = new FormData();
         formData.append('title', uploadFormData.title);
         formData.append('description', uploadFormData.description)
@@ -23,8 +29,17 @@ export const fileUploadService = {
 
         const response = await fetch(`${uploadBaseUrl}/api/v1/works`, {
             method: 'POST',
-            credentials: 'include', // cookie에 있는 인증 토큰 사용
+            headers: {
+                'Authorization': `Bearer ${uploadToken}`,
+            },
             body: formData
+        });
+
+        return toBaseResponse<string>(response);
+    },
+    getUploadToken: async (): Promise<BaseResponse<string>> => {
+        const response = await fetch('/api/auth/upload-token', {
+            method: 'POST'
         });
 
         return toBaseResponse<string>(response);
