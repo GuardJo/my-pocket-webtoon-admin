@@ -33,6 +33,11 @@ export const SERIAL_STATE_LABEL = {
     SUSPENDED: '휴재',
     COMPLETED: '완결'
 } satisfies Record<SerialState, string>
+export const SERIAL_STATES: SerialState[] = [
+    'COMPLETED',
+    'PUBLISHED',
+    'SUSPENDED'
+];
 
 /*
 작품 정보
@@ -43,4 +48,13 @@ export interface WorkInfo {
     title: string,
     serialState: SerialState,
     visibility: boolean
+}
+
+/*
+작품 상세 정보
+ */
+export interface WorkDetailInfo extends WorkInfo {
+    description: string,
+    episodeTotalSize: number,
+    lastUpdateDate: string
 }

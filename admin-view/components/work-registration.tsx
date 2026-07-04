@@ -7,15 +7,10 @@ import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select';
 import {ArrowLeft, CheckCircle2, FileArchive, Upload, X} from 'lucide-react';
 import {useRouter} from 'next/navigation';
-import {SERIAL_STATE_LABEL, SerialState} from "@/lib/models";
+import {SERIAL_STATE_LABEL, SERIAL_STATES, SerialState} from "@/lib/models";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {fileUploadService, WorkUploadFormData} from "@/lib/file-upload-service";
-
-const serialStates: SerialState[] = [
-    'COMPLETED',
-    'PUBLISHED',
-    'SUSPENDED'
-];
+import Image from "next/image";
 
 const visibilities = [
     {label: '공개', value: true},
@@ -219,7 +214,7 @@ export default function WorkRegistration() {
                                             <SelectValue placeholder="연재상태를 선택하세요"/>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {serialStates.map((serialState) => (
+                                            {SERIAL_STATES.map((serialState) => (
                                                 <SelectItem key={serialState} value={serialState}>
                                                     {SERIAL_STATE_LABEL[serialState]}
                                                 </SelectItem>
@@ -330,11 +325,9 @@ export default function WorkRegistration() {
                                         />
                                         {thumbnailPreview ? (
                                             <>
-                                                <img
-                                                    src={thumbnailPreview || "/images/default-nob-image.png"}
-                                                    alt="썸네일 미리보기"
-                                                    className="absolute inset-0 w-full h-full object-cover"
-                                                />
+                                                <Image src={thumbnailPreview || '/images/default-nob-image.png'}
+                                                       alt='썸네일 미리보기' width={200} height={250}
+                                                       className={"absolute inset-0 w-full h-full object-cover"}/>
                                                 <div
                                                     className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                                                     <p className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">
