@@ -58,3 +58,15 @@ export interface WorkDetailInfo extends WorkInfo {
     episodeTotalSize: number,
     lastUpdateDate: string
 }
+
+/*
+에피소드 정보
+ */
+export interface EpisodeInfo {
+    id: number,
+    workId: number,
+    episodeThumbnailUrl: string | null,
+    episodeNo: number,
+    episodeImageTotalCount: number,
+    lastUpdateDate: string
+}
