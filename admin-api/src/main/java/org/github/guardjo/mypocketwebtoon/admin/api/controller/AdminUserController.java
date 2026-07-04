@@ -27,11 +27,7 @@ public class AdminUserController implements AdminUserApiDocs {
 
         String token = adminUserService.getAccessToken(loginRequest.id(), loginRequest.password());
 
-        return BaseResponse.<String>builder()
-                .status(HttpStatus.OK.value())
-                .statusCode(HttpStatus.OK.name())
-                .data(token)
-                .build();
+        return BaseResponse.of(HttpStatus.OK, token);
     }
 
     @GetMapping("/me")
@@ -42,5 +38,15 @@ public class AdminUserController implements AdminUserApiDocs {
         AdminProfileInfo profileInfo = AdminProfileInfo.of(principal.getAdminInfo());
 
         return BaseResponse.of(HttpStatus.OK, profileInfo);
+    }
+
+    @PostMapping("/upload-token")
+    @Override
+    public BaseResponse<String> getFileUploadToken(@AuthenticationPrincipal AdminUserPrincipal principal) {
+        log.info("POST : /api/v1/auth/upload-token");
+
+        String token = adminUserService.getTemporarilyAccessToken(principal.getAdminInfo());
+
+        return BaseResponse.of(HttpStatus.OK, token);
     }
 }

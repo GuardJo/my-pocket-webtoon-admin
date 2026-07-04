@@ -28,9 +28,10 @@ export default function LoginPage() {
             });
 
             if (!response.ok) {
-                const errorBody = response.statusText;
-                console.error('Error:', response);
-                alert(errorBody ?? '로그인에 실패하였습니다.');
+                const errorBody = await response.json()
+                    .catch(() => null);
+                console.error('Error:', errorBody?.message ?? 'Unknown error');
+                alert(errorBody?.message ?? '로그인에 실패하였습니다.');
                 return;
             }
 

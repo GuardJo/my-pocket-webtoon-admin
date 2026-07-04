@@ -16,6 +16,13 @@ export const Default: Story = {
     parameters: {
         msw: {
             handlers: [
+                http.post('/api/auth/upload-token', () => {
+                    return Response.json({
+                        status: 200,
+                        statusCode: 'Ok',
+                        data: 'upload-token'
+                    })
+                }),
                 http.post(`${fileUploadUrl}/api/v1/works`, () => {
                     return Response.json({
                         status: 200,

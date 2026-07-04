@@ -215,4 +215,33 @@ class AdminUserControllerTest {
 
         assertThat(actual.getData()).isEqualTo(expected);
     }
+
+    @DisplayName("POST: /api/v1/auth/upload-token")
+    @Test
+    void test_getFileUploadToken() throws Exception {
+        AdminUserPrincipal testUser = new AdminUserPrincipal(AdminInfo.of(TestDataGenerator.adminInfoEntity("test", "tester")));
+        String expectedToken = "temporarily-access-token";
+
+        given(adminUserService.getTemporarilyAccessToken(eq(testUser.getAdminInfo()))).willReturn(expectedToken);
+
+        String response = mockMvc.perform(post("/api/v1/auth/upload-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(user(testUser))
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual).isNotNull();
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
+        assertThat(actual.getData()).isEqualTo(expectedToken);
+
+        then(adminUserService).should().getTemporarilyAccessToken(eq(testUser.getAdminInfo()));
+    }
 }

@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.github.guardjo.mypocketwebtoon.admin.config.properties.JwtProperties;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,8 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JwtProviderTest {
     private static final String SECRET = "test-secret-key-for-jwt-provider-unit-test-1234";
     private static final long EXPIRATION_MILLIS = 60_000L;
+    private static final long EXPIRATION_TEMP_MILLIS = 30_000L;
 
-    private final JwtProvider jwtProvider = new JwtProvider(new JwtProperties(SECRET, EXPIRATION_MILLIS));
+    private final JwtProvider jwtProvider = new JwtProvider(new JwtProperties(SECRET, EXPIRATION_MILLIS, EXPIRATION_TEMP_MILLIS));
     private final SecretKey secretKey = new SecretKeySpec(
             SECRET.getBytes(StandardCharsets.UTF_8),
             Jwts.SIG.HS256.key().build().getAlgorithm()
@@ -43,6 +45,28 @@ class JwtProviderTest {
         assertThat(claims.getExpiration()).isNotNull();
         assertThat(claims.getExpiration().getTime() - claims.getIssuedAt().getTime())
                 .isEqualTo(EXPIRATION_MILLIS);
+    }
+
+    @DisplayName("특정 관리자의 임시 JWT 토큰 생성 및 토큰 검증")
+    @Test
+    void test_generateTemporarilyAccessToken_and_validateClaims() {
+        AdminInfoEntity adminInfoEntity = TestDataGenerator.adminInfoEntity("tester", "테스터");
+        AdminInfo adminInfo = AdminInfo.of(adminInfoEntity);
+        String temporarilyAccessToken = jwtProvider.generateTemporarilyAccessToken(adminInfo);
+
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(temporarilyAccessToken)
+                .getPayload();
+
+        assertThat(temporarilyAccessToken).isNotBlank();
+        assertThat(claims.get("id", String.class)).isEqualTo(adminInfo.id());
+        assertThat(claims.get("role", String.class)).isEqualTo(adminInfo.roleId());
+        assertThat(claims.getIssuedAt()).isNotNull();
+        assertThat(claims.getExpiration()).isNotNull();
+        assertThat(claims.getExpiration().getTime() - claims.getIssuedAt().getTime())
+                .isEqualTo(EXPIRATION_TEMP_MILLIS);
     }
 
     @DisplayName("JWT 토큰에서 관리자 식별키를 조회한다")

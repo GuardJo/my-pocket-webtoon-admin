@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.security.JwtProvider;
 import org.github.guardjo.mypocketwebtoon.admin.service.AdminUserService;
@@ -29,6 +30,11 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         return jwtProvider.generateAccessToken(adminInfo);
+    }
+
+    @Override
+    public String getTemporarilyAccessToken(AdminInfo adminInfo) {
+        return jwtProvider.generateTemporarilyAccessToken(adminInfo);
     }
 
     /*
