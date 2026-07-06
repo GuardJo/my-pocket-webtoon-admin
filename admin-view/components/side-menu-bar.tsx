@@ -52,7 +52,7 @@ export default function SideMenuBar() {
     };
 
     return (
-        <aside className="w-64 bg-gradient-to-b from-blue-700 to-blue-800 text-white min-h-screen flex flex-col">
+        <aside className="h-screen w-64 shrink-0 overflow-y-auto bg-gradient-to-b from-blue-700 to-blue-800 text-white flex flex-col">
             <div className="p-6 border-b border-blue-600">
                 <h1 className="text-xl font-bold">My Pocket Webtoon</h1>
                 <p className="text-blue-200 text-sm font-semibold tracking-wider">
