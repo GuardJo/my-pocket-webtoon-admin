@@ -41,6 +41,16 @@ export const workService = {
         });
 
         return toBaseResponse<string>(response);
+    },
+    deleteWork: async (workId: number): Promise<BaseResponse<string>> => {
+        const response = await fetch(`/api/works/${workId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return toBaseResponse<string>(response);
     }
 };
 

@@ -113,6 +113,13 @@ export const Default: Story = {
                         statusText: 'Ok',
                         data: 'Successes'
                     });
+                }),
+                http.delete('/api/works/:workId', () => {
+                    return Response.json({
+                        status: 200,
+                        statusText: 'Ok',
+                        data: 'Successes'
+                    });
                 })
             ]
         }

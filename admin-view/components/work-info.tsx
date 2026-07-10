@@ -10,9 +10,11 @@ import Image from "next/image";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {fileUploadService} from "@/lib/file-upload-service";
 import {workService, WorkUpdateRequest} from "@/lib/work-service";
+import {useRouter} from "next/navigation";
 
 export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState(false);
@@ -74,6 +76,26 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
         }
     });
 
+    const workDeleteMutation = useMutation({
+        mutationKey: ['deleteWork', workDetailInfo.id],
+        mutationFn: (variables: { workId: number }) => workService.deleteWork(variables.workId),
+        onSuccess: async (response) => {
+            if (response.status !== 200) {
+                console.error('Failed delete work: {}', response);
+                alert(response.data);
+            } else {
+                await queryClient.invalidateQueries({queryKey: ['getWorks']});
+
+                alert('작품이 삭제되었습니다.');
+                router.replace('/works');
+            }
+        },
+        onError: error => {
+            console.error('Delete work error : {}', error);
+            alert('작품 삭제에 실패하였습니다.');
+        }
+    });
+
     const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -112,6 +134,12 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
 
         setIsThumbnailModalOpen(false);
     };
+
+    const handleWorkDelete = () => {
+        if (confirm('작품을 삭제하시겠습니까?')) {
+            workDeleteMutation.mutate({workId: workDetailInfo.id});
+        }
+    }
 
     return (
         <div className="grid grid-cols-3 gap-8 mb-12 bg-inherit">
@@ -182,6 +210,7 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
                             Edit Details
                         </Button>
                         <Button
+                            onClick={handleWorkDelete}
                             variant="outline"
                             className="text-red-600 border-red-600 hover:bg-red-50"
                         >
