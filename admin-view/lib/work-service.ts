@@ -30,5 +30,24 @@ export const workService = {
         });
 
         return toBaseResponse<Pageable<EpisodeInfo>>(response);
+    },
+    upldateWork: async (workId: number, workUpdateRequest: WorkUpdateRequest): Promise<BaseResponse<string>> => {
+        const response = await fetch(`/api/works/${workId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(workUpdateRequest)
+        });
+
+        return toBaseResponse<string>(response);
     }
 };
+
+// 작품 정보 수정 요청
+export interface WorkUpdateRequest {
+    title: string;
+    description: string;
+    serialState: string;
+    visibility: boolean;
+}

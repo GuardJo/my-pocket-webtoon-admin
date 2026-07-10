@@ -9,6 +9,7 @@ import {SERIAL_STATE_LABEL, SERIAL_STATES, SerialState, WorkDetailInfo} from "@/
 import Image from "next/image";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {fileUploadService} from "@/lib/file-upload-service";
+import {workService, WorkUpdateRequest} from "@/lib/work-service";
 
 export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
     const queryClient = useQueryClient();
@@ -51,6 +52,28 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
         }
     });
 
+    const workUpdateMutation = useMutation({
+        mutationKey: ['upldateWork', workDetailInfo.id],
+        mutationFn: (variables: {
+            workId: number,
+            updateReq: WorkUpdateRequest
+        }) => workService.upldateWork(variables.workId, variables.updateReq),
+        onSuccess: async (response) => {
+            if (response.status !== 200) {
+                console.error('Failed update work: {}', response);
+                alert(response.data);
+            } else {
+                await queryClient.invalidateQueries({queryKey: ['getWorks']});
+                await queryClient.invalidateQueries({queryKey: ['getWork', workDetailInfo.id]});
+                alert('작품 정보가 변경되었습니다.');
+            }
+        },
+        onError: error => {
+            console.error('Update work error : {}', error);
+            alert('작품 정보 저장에 실패하였습니다.');
+        }
+    });
+
     const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -64,8 +87,18 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
     };
 
     const handleDetailsSave = () => {
-        // TODO API 연동
         console.log('Saving details:', detailsFormData);
+
+        workUpdateMutation.mutate({
+            workId: workDetailInfo.id,
+            updateReq: {
+                title: detailsFormData.title,
+                description: detailsFormData.description,
+                serialState: detailsFormData.status,
+                visibility: detailsFormData.visibility
+            }
+        });
+
         setIsDetailsModalOpen(false);
     };
 

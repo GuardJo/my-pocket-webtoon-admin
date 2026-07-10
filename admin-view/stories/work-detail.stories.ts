@@ -106,6 +106,13 @@ export const Default: Story = {
                         statusText: 'Ok',
                         data: 'Successes'
                     });
+                }),
+                http.patch('/api/works/:workId', () => {
+                    return Response.json({
+                        status: 200,
+                        statusText: 'Ok',
+                        data: 'Successes'
+                    });
                 })
             ]
         }
