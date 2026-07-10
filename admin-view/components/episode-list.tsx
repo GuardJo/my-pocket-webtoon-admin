@@ -1,54 +1,37 @@
 "use client";
 
-import {EpisodeInfo} from "@/lib/models";
+import {EpisodeInfo, Pageable} from "@/lib/models";
 import {useState} from "react";
 import EpisodeCard from "@/components/episode-card";
 import {Button} from "@/components/ui/button";
-
-const mockEpisodes: EpisodeInfo[] = [
-    {
-        id: 128,
-        workId: 1,
-        episodeNo: 128,
-        episodeThumbnailUrl: 'https://images.unsplash.com/photo-1549887534-f2cb8ff0bbb1?w=300&h=200&fit=crop',
-        episodeImageTotalCount: 72,
-        lastUpdateDate: '2023.10.24',
-    },
-    {
-        id: 127,
-        workId: 1,
-        episodeNo: 127,
-        episodeThumbnailUrl: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=200&fit=crop',
-        episodeImageTotalCount: 68,
-        lastUpdateDate: '2023.10.17',
-    },
-    {
-        id: 126,
-        workId: 1,
-        episodeNo: 126,
-        episodeThumbnailUrl: 'https://images.unsplash.com/photo-1507842211343-583f20270319?w=300&h=200&fit=crop',
-        episodeImageTotalCount: 65,
-        lastUpdateDate: '2023.10.10',
-    },
-    {
-        id: 125,
-        workId: 1,
-        episodeNo: 125,
-        episodeThumbnailUrl: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=200&fit=crop',
-        episodeImageTotalCount: 74,
-        lastUpdateDate: '2023.10.03',
-    },
-];
+import {useQuery} from "@tanstack/react-query";
+import {workService} from "@/lib/work-service";
 
 export default function EpisodeList({workId, workTitle}: EpisodeListProps) {
     const [currentPage, setCurrentPage] = useState(1);
-    const [currentEpisodes] = useState<EpisodeInfo[]>(mockEpisodes);
 
     const itemsPerPage = 4;
-    const totalEpisodes = 128;
-    const totalPages = Math.ceil(totalEpisodes / itemsPerPage);
     const visiblePageCount = 5;
     const halfVisiblePageCount = Math.floor(visiblePageCount / 2);
+
+    const {data} = useQuery<Pageable<EpisodeInfo>>({
+        queryKey: ['getEpisodes', workId, currentPage, itemsPerPage],
+        queryFn: async () => {
+            const response = await workService.getEpisodes(workId, currentPage - 1, itemsPerPage)
+
+            if (response.status !== 200) {
+                console.error('Error:', response.status, ', cause: ', response.data ?? 'no data');
+                throw new Error('작품 에피소드 목록 조회에 실패하였습니다.');
+            }
+
+            return response.data;
+        }
+    });
+
+    const currentEpisodes = data?.content ?? [];
+    const totalPages = data?.page.totalPages ?? 1;
+
+
     const startPage = Math.max(
         1,
         Math.min(currentPage - halfVisiblePageCount, totalPages - visiblePageCount + 1)
@@ -58,7 +41,7 @@ export default function EpisodeList({workId, workTitle}: EpisodeListProps) {
         {length: endPage - startPage + 1},
         (_, index) => startPage + index
     );
-    
+
     const requestEpisodePage = (page: number) => {
         const nextPage = Math.min(Math.max(page, 1), totalPages);
 
