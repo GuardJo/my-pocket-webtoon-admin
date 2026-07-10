@@ -7,11 +7,16 @@ import {Textarea} from "@/components/ui/textarea";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {SERIAL_STATE_LABEL, SERIAL_STATES, SerialState, WorkDetailInfo} from "@/lib/models";
 import Image from "next/image";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {fileUploadService} from "@/lib/file-upload-service";
 
 export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
+    const queryClient = useQueryClient();
+
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState(false);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+    const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [detailsFormData, setDetailsFormData] = useState({
         id: workDetailInfo.id,
         thumbnailUrl: workDetailInfo.thumbnailUrl,
@@ -23,6 +28,29 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
         lastUpdateDate: workDetailInfo.lastUpdateDate
     });
 
+    const thumbnailFileUploadMutation = useMutation({
+        mutationKey: ['thumbnailFileUpload', workDetailInfo.id, thumbnailFile],
+        mutationFn: (variables: {
+            workId: number,
+            file: File
+        }) => fileUploadService.uploadThumbnail(variables.workId, variables.file),
+        onSuccess: async (response) => {
+            if (response.status !== 200) {
+                console.error('Failed update thumbnailFile: {}', response);
+                alert(response.data);
+            } else {
+                await queryClient.invalidateQueries({queryKey: ['getWorks']});
+                await queryClient.invalidateQueries({queryKey: ['getWork', workDetailInfo.id]});
+                console.info('Updated thumbnailFile, workId = {}', workDetailInfo.id);
+                alert('작품 썸네일 파일이 변경되었습니다.');
+            }
+        },
+        onError: error => {
+            console.error('Update error : {}', error);
+            alert('작품 썸네일 파일 저장에 실패하였습니다.');
+        }
+    });
+
     const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -31,6 +59,7 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
                 setThumbnailPreview(event.target?.result as string);
             };
             reader.readAsDataURL(file);
+            setThumbnailFile(file);
         }
     };
 
@@ -41,8 +70,13 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
     };
 
     const handleThumbnailSave = () => {
-        // TODO API 연동
-        console.log('Saving thumbnail:', thumbnailPreview);
+        console.log('Saving thumbnail:', thumbnailFile?.name);
+
+        thumbnailFileUploadMutation.mutate({
+            workId: workDetailInfo.id,
+            file: thumbnailFile as File
+        });
+
         setIsThumbnailModalOpen(false);
     };
 

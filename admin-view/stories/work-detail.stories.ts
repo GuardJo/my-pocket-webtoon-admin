@@ -12,6 +12,8 @@ export default meta;
 
 type Story = StoryObj<typeof WorkDetail>
 
+const fileUploadUrl = process.env.NEXT_PUBLIC_UPLOAD_BASE_URL;
+
 export const Default: Story = {
     args: {
         workId: 1
@@ -89,6 +91,20 @@ export const Default: Story = {
                         status: 200,
                         statusText: 'Ok',
                         data: pageContent
+                    });
+                }),
+                http.post('/api/auth/upload-token', () => {
+                    return Response.json({
+                        status: 200,
+                        statusCode: 'Ok',
+                        data: 'upload-token'
+                    })
+                }),
+                http.patch(`${fileUploadUrl}/api/v1/works/:workId/thumbnail`, () => {
+                    return Response.json({
+                        status: 200,
+                        statusText: 'Ok',
+                        data: 'Successes'
                     });
                 })
             ]
