@@ -409,6 +409,7 @@ class WorkServiceTest {
         assertThat(actual.id()).isEqualTo(workId);
         assertThat(actual.thumbnailUrl()).isEqualTo(thumbnailImage.getFileUrl());
         assertThat(actual.serialState()).isEqualTo(workEntity.getSerialState());
+        assertThat(actual.visibility()).isEqualTo(workEntity.isVisibility());
         assertThat(actual.title()).isEqualTo(workEntity.getTitle());
         assertThat(actual.description()).isEqualTo(workEntity.getDescription());
         assertThat(actual.episodeTotalSize()).isEqualTo(totalEpisodes);

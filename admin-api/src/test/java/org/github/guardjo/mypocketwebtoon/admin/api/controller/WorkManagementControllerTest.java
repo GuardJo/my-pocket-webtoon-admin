@@ -321,6 +321,7 @@ class WorkManagementControllerTest {
                 workId,
                 "/uploads/thumbnail/work-detail.png",
                 "ONGOING",
+                true,
                 "상세 조회용 작품",
                 "상세 조회용 작품 설명",
                 12,
