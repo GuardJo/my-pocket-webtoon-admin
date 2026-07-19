@@ -43,6 +43,26 @@ export const fileUploadService = {
         });
 
         return toBaseResponse<string>(response);
+    },
+    uploadThumbnail: async (workId: number, thumbnailFile: File): Promise<BaseResponse<string>> => {
+        const getTokenResponse = await fileUploadService.getUploadToken();
+        if (getTokenResponse.status !== 200 || !getTokenResponse.data) {
+            throw new Error('Failed to get upload token');
+        }
+        const uploadToken = getTokenResponse.data;
+
+        const formData = new FormData();
+        formData.append('thumbnailFile', thumbnailFile);
+
+        const response = await fetch(`${uploadBaseUrl}/api/v1/works/${workId}/thumbnail`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${uploadToken}`,
+            },
+            body: formData
+        });
+
+        return toBaseResponse<string>(response);
     }
 }
 
