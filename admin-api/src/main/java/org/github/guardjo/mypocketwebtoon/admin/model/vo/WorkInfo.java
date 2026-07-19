@@ -18,6 +18,9 @@ public record WorkInfo(
         @Schema(description = "작품 연재상태", example = "COMPLETED")
         String serialState,
 
+        @Schema(description = "작품 공개여부", example = "true")
+        boolean visibility,
+
         @Schema(description = "작품명", example = "웹툰명")
         String title,
 

@@ -103,6 +103,7 @@ public class WorkServiceImpl implements WorkService {
                 workEntity.getId(),
                 Objects.isNull(workEntity.getThumbnailImage()) ? null : workEntity.getThumbnailImage().getFileUrl(),
                 workEntity.getSerialState(),
+                workEntity.isVisibility(),
                 workEntity.getTitle(),
                 workEntity.getDescription(),
                 (int) episodeTotalCount,
