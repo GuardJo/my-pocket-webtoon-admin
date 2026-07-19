@@ -7,9 +7,9 @@ export default function EpisodeCard({workTitle, episodeInfo}: EpisodeCardProps) 
             key={episodeInfo.id}
             className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
         >
-            <div className="aspect-video bg-gray-300 overflow-hidden">
+            <div className="relative aspect-video bg-gray-300 overflow-hidden">
                 <Image src={episodeInfo.episodeThumbnailUrl ?? '/images/default-nob-image.png'} alt='에피소드 썸네일'
-                       width={100} height={60} className="w-full h-full object-cover"/>
+                       fill={true} className="w-full h-full object-cover"/>
             </div>
             <div className="p-4">
                 <p className="text-sm font-semibold text-indigo-600 mb-2">

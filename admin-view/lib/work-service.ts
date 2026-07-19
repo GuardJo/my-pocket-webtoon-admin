@@ -31,7 +31,7 @@ export const workService = {
 
         return toBaseResponse<Pageable<EpisodeInfo>>(response);
     },
-    upldateWork: async (workId: number, workUpdateRequest: WorkUpdateRequest): Promise<BaseResponse<string>> => {
+    updateWork: async (workId: number, workUpdateRequest: WorkUpdateRequest): Promise<BaseResponse<string>> => {
         const response = await fetch(`/api/works/${workId}`, {
             method: 'PATCH',
             headers: {

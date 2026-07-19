@@ -59,7 +59,7 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
         mutationFn: (variables: {
             workId: number,
             updateReq: WorkUpdateRequest
-        }) => workService.upldateWork(variables.workId, variables.updateReq),
+        }) => workService.updateWork(variables.workId, variables.updateReq),
         onSuccess: async (response) => {
             if (response.status !== 200) {
                 console.error('Failed update work: {}', response);
@@ -147,9 +147,9 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
             <div className="col-span-1">
                 <div className="relative group">
                     <div
-                        className="w-full aspect-[3/4] bg-gray-300 rounded-lg overflow-hidden flex-shrink-0">
+                        className="relative w-full aspect-[3/4] bg-gray-300 rounded-lg overflow-hidden flex-shrink-0">
                         <Image src={thumbnailPreview ?? detailsFormData.thumbnailUrl ?? '/images/default-nob-image.png'}
-                               alt={detailsFormData.title} width={200} height={200}
+                               alt={detailsFormData.title} fill={true}
                                className="w-full h-full object-cover"/>
                     </div>
                     <button
@@ -187,7 +187,7 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
                                 수정일자
                             </p>
                             <p className="text-3xl font-bold text-gray-900">
-                                {detailsFormData.lastUpdateDate ? new Date(detailsFormData.lastUpdateDate).toLocaleDateString() : 'N/A'}
+                                {detailsFormData.lastUpdateDate ? new Date(detailsFormData.lastUpdateDate).toLocaleDateString('ko-KR') : 'N/A'}
                             </p>
                         </div>
                         <div>
@@ -352,8 +352,8 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
                                         className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
                                         {thumbnailPreview ? (
                                             <div className="space-y-3">
-                                                <Image src={thumbnailPreview} alt="Preview" width={200} height={200}
-                                                       className="w-full aspect-[3/4] object-cover rounded"/>
+                                                <Image src={thumbnailPreview} alt="Preview" width={300} height={400}
+                                                       className="w-full aspect-3/4 object-cover rounded"/>
                                                 <p className="text-sm text-gray-600">클릭하여 다시 선택</p>
                                             </div>
                                         ) : (

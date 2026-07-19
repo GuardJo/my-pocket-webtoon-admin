@@ -44,10 +44,6 @@ export default function EpisodeList({workId, workTitle}: EpisodeListProps) {
 
     const requestEpisodePage = (page: number) => {
         const nextPage = Math.min(Math.max(page, 1), totalPages);
-
-        // TODO API 연동하기
-        console.info(`${nextPage - 1} page, in works(${workId})`);
-
         setCurrentPage(nextPage);
     };
 

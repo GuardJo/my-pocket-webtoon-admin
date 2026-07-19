@@ -1,13 +1,12 @@
 'use client'
 
-import {useRouter} from "next/navigation";
+import {redirect, useRouter} from "next/navigation";
 import {ArrowLeft, Loader} from "lucide-react";
 import WorkInfo from "@/components/work-info";
 import EpisodeList from "@/components/episode-list";
 import {BaseResponse, WorkDetailInfo} from "@/lib/models";
 import {useQuery} from "@tanstack/react-query";
 import {workService} from "@/lib/work-service";
-import NotFound from "next/dist/client/components/builtin/not-found";
 
 export default function WorkDetail({workId}: WorkDetailProps) {
     const router = useRouter();
@@ -25,6 +24,11 @@ export default function WorkDetail({workId}: WorkDetailProps) {
         },
         enabled: Number.isFinite(workId),
     });
+
+    if (!isLoading && !work) {
+        alert('작품 정보를 찾을 수 없습니다.');
+        return redirect('/works');
+    }
 
     return (
         <div className="flex-1 flex flex-col bg-gray-50">
@@ -50,14 +54,16 @@ export default function WorkDetail({workId}: WorkDetailProps) {
                         <div className="flex items-center justify-center h-64">
                             <Loader className="w-12 h-12 animate-spin text-gray-500"/>
                         </div>
-                    ) : work ? (
+                    ) : (
                         <>
                             {/* Work Header Section */}
-                            <WorkInfo workDetailInfo={work}/>
+                            <WorkInfo workDetailInfo={work!}/>
 
                             {/* Episode List Section */}
-                            <EpisodeList workId={workId} workTitle={work.title}/>
-                        </>) : <NotFound/>}
+                            <EpisodeList workId={workId} workTitle={work!.title}/>
+                            {/* TOOD 404 페이지 별도 구성하기 */}
+                        </>
+                    )}
                 </div>
             </div>
         </div>
