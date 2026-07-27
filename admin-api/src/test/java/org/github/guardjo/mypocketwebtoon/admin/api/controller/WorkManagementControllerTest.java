@@ -58,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 classes = StaticResourceConfig.class
         )
 )
-class WorkManagementControllerTest {
+class WorkManagementControllerTest extends AbstractPageableControllerTest {
     private final static AdminUserPrincipal TEST_USER = new AdminUserPrincipal(AdminInfo.of(TestDataGenerator.adminInfoEntity("test", "tester")));
 
     @Autowired
@@ -606,16 +606,5 @@ class WorkManagementControllerTest {
                 "application/tar",
                 "episode-content".getBytes()
         );
-    }
-
-    private record MockPageResponse<T>(
-            List<T> content,
-            MockPageMetadata page
-    ) {
-    }
-
-    private record MockPageMetadata(
-            long totalElements
-    ) {
     }
 }
