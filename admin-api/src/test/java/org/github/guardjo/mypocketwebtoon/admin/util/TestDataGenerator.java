@@ -111,4 +111,16 @@ public class TestDataGenerator {
                 true
         );
     }
+
+    public static UserInfoEntity userInfoEntity(String id, AdminInfoEntity adminInfoEntity) {
+        return UserInfoEntity.builder()
+                .id(id)
+                .name(id + "_name")
+                .nickname(id + "_nickname")
+                .password("{noop}test123!")
+                .activate(true)
+                .birthYmd(LocalDate.now())
+                .adminInfo(adminInfoEntity)
+                .build();
+    }
 }
