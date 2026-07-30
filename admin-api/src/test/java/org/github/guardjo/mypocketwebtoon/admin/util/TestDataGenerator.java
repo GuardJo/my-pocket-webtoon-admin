@@ -2,6 +2,9 @@ package org.github.guardjo.mypocketwebtoon.admin.util;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.*;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.EpisodeInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+
+import java.time.LocalDate;
 
 public class TestDataGenerator {
     private TestDataGenerator() {
@@ -97,5 +100,27 @@ public class TestDataGenerator {
                 episodeImageTotalCount,
                 episode.getModifiedAt().toLocalDate()
         );
+    }
+
+    public static UserInfo userInfo(String id, String name) {
+        return new UserInfo(
+                id,
+                name,
+                "nickname_" + name,
+                LocalDate.now(),
+                true
+        );
+    }
+
+    public static UserInfoEntity userInfoEntity(String id, AdminInfoEntity adminInfoEntity) {
+        return UserInfoEntity.builder()
+                .id(id)
+                .name(id + "_name")
+                .nickname(id + "_nickname")
+                .password("{noop}test123!")
+                .activate(true)
+                .birthYmd(LocalDate.now())
+                .adminInfo(adminInfoEntity)
+                .build();
     }
 }

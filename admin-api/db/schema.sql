@@ -135,3 +135,32 @@ comment on column episode_image.file_url is '이미지 파일 url';
 comment on column episode_image.file_size is '이미지 파일 크기';
 comment on column episode_image.created_at is '생성일시';
 comment on column episode_image.modified_at is '수정일시';
+
+--- 회원 마스터
+create table user_info
+(
+    id                varchar(20) primary key,
+    name              varchar(50)         not null,
+    nickname          varchar(100) unique not null,
+    password          varchar(300)        not null,
+    activate          bool                not null default false,
+    birth_ymd         date,
+    register_admin_id varchar(20)         not null references admin_info (id),
+    created_at        timestamp           not null default current_timestamp,
+    modified_at       timestamp           not null default current_timestamp
+);
+
+create index idx_user_info_nickname on user_info (nickname);
+create index idx_user_info_register_admin_id on user_info (register_admin_id);
+create index idx_user_info_name on user_info (name);
+
+comment on table user_info is '회원 마스터';
+comment on column user_info.id is '회원 아이디';
+comment on column user_info.name is '회원명';
+comment on column user_info.nickname is '회원 닉네임';
+comment on column user_info.password is '비밀번호';
+comment on column user_info.activate is '활성 상태';
+comment on column user_info.birth_ymd is '생년월일';
+comment on column user_info.register_admin_id is '가입 승인 관리자 아이디';
+comment on column user_info.created_at is '생성일시';
+comment on column user_info.modified_at is '수정일시';
