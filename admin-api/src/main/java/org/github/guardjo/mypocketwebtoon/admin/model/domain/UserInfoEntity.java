@@ -23,7 +23,7 @@ public class UserInfoEntity extends BaseEntity {
     @Column(length = 50, nullable = false)
     private String name;
 
-    @Column(length = 100, nullable = false)
+    @Column(length = 100, nullable = false, unique = true)
     private String nickname;
 
     @Column(length = 300, nullable = false)
@@ -36,6 +36,6 @@ public class UserInfoEntity extends BaseEntity {
     private LocalDate birthYmd;
 
     @ManyToOne
-    @JoinColumn(name = "register_admin_id")
+    @JoinColumn(name = "register_admin_id", nullable = false)
     private AdminInfoEntity adminInfo;
 }

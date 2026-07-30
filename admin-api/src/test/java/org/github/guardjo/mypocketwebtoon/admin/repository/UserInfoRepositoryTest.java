@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
@@ -62,7 +63,7 @@ class UserInfoRepositoryTest {
 
         userInfoRepository.saveAll(userInfoEntityList);
 
-        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize);
+        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize, Sort.by("id"));
 
         Page<UserInfoEntity> expected = userInfoRepository.findAll(pageRequest);
 

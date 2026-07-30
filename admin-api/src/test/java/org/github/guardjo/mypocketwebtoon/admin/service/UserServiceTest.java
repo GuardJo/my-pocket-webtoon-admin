@@ -35,7 +35,7 @@ class UserServiceTest {
 
     @DisplayName("회원 목록 페이징 조회")
     @Test
-    void testa_getUserList() {
+    void test_getUserList() {
         PageRequest pageRequest = PageRequest.of(0, 10);
 
         List<UserInfoEntity> userInfoEntityList = List.of(
@@ -50,7 +50,7 @@ class UserServiceTest {
         assertThat(actual).isNotNull();
         assertThat(actual.getTotalElements()).isEqualTo(userInfoEntityList.size());
         assertThat(actual.getContent()).usingRecursiveComparison()
-                .comparingOnlyFields("id", "username", "nickname", "activate")
+                .comparingOnlyFields("id", "name", "nickname", "activate")
                 .isEqualTo(userInfoEntityList);
 
         then(userInfoRepository).should().findAll(eq(pageRequest));
