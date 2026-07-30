@@ -57,7 +57,7 @@ class UserControllerTest extends AbstractPageableControllerTest {
     @DisplayName("GET : /api/v1/users")
     @Test
     void test_getUsers() throws Exception {
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("signupDate")));
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("createdAt")));
 
         List<UserInfo> userInfoList = List.of(
                 TestDataGenerator.userInfo("test1", "테스터1"),
@@ -94,7 +94,7 @@ class UserControllerTest extends AbstractPageableControllerTest {
     @DisplayName("GET : /api/v1/users : 조회 결과 데이터가 없을 경우")
     @Test
     void test_getUsers_empty() throws Exception {
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("signupDate")));
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("createdAt")));
 
         Page<UserInfo> expected = new PageImpl<>(List.of());
 

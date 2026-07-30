@@ -25,7 +25,7 @@ public class UserController implements UserApiDocs {
 
     @GetMapping
     @Override
-    public BaseResponse<PagedModel<UserInfo>> getUsers(@PageableDefault(sort = "signupDate", direction = Sort.Direction.DESC) Pageable pageable) {
+    public BaseResponse<PagedModel<UserInfo>> getUsers(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("GET : /api/v1/users, pageNumber = {}, pageSize = {}", pageable.getPageNumber(), pageable.getPageSize());
 
         Page<UserInfo> userInfoPage = userService.getUserList(pageable);
