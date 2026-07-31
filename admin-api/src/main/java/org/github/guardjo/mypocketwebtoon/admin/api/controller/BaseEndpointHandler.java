@@ -69,6 +69,7 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
                                                                   org.springframework.http.HttpHeaders headers,
                                                                   HttpStatusCode status,
                                                                   WebRequest request) {
+        log.error("MethodArgumentNotValidException : {}", ex.getMessage(), ex);
         return ResponseEntity.badRequest().body(BaseResponse.of(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."));
     }
 }

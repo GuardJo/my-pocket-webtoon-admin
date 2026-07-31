@@ -3,6 +3,7 @@ package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.repository.UserInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
@@ -23,5 +24,14 @@ public class UserServiceImpl implements UserService {
         Page<UserInfoEntity> userInfoEntities = userInfoRepository.findAll(pageable);
 
         return userInfoEntities.map(UserInfo::of);
+    }
+
+    @Override
+    public void createUser(UserCreateRequest createRequest, String adminId) {
+        log.info("Creating user, createId= {}, adminId = {}", createRequest.id(), adminId);
+
+        // TODO 기능 구현하기
+
+        log.info("Created user, createId= {}, adminId = {}", createRequest.id(), adminId);
     }
 }
