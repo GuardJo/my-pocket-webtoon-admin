@@ -113,10 +113,14 @@ public class TestDataGenerator {
     }
 
     public static UserInfoEntity userInfoEntity(String id, AdminInfoEntity adminInfoEntity) {
+        return userInfoEntity(id, id + "_name", adminInfoEntity);
+    }
+
+    public static UserInfoEntity userInfoEntity(String id, String nickname, AdminInfoEntity adminInfoEntity) {
         return UserInfoEntity.builder()
                 .id(id)
                 .name(id + "_name")
-                .nickname(id + "_nickname")
+                .nickname(nickname)
                 .password("{noop}test123!")
                 .activate(true)
                 .birthYmd(LocalDate.now())
