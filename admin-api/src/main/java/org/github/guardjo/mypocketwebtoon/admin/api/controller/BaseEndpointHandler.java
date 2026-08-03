@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.exception.WorkFileStorageException;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "org.github.guardjo.mypocketwebtoon.admin.api.controller")
 @Slf4j
 public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(
             exception = {
                     IllegalArgumentException.class,
-                    ValidationException.class,
-                    DataIntegrityViolationException.class
+                    ValidationException.class
             }
     )
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -54,6 +54,22 @@ public class BaseEndpointHandler extends ResponseEntityExceptionHandler {
         log.error("Not found Exception : {}", e.getMessage(), e);
 
         return BaseResponse.of(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(exception = {
+            DataIntegrityViolationException.class,
+            DuplicateKeyException.class
+    })
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public BaseResponse<String> handleConflictException(Exception e) {
+        log.error("Conflict Exception : {}", e.getMessage(), e);
+
+        String message = e.getMessage();
+        if (e.getClass().isInstance(DataIntegrityViolationException.class)) {
+            message = "일부 데이터가 이미 존재하는 데이터입니다.";
+        }
+
+        return BaseResponse.of(HttpStatus.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(WorkFileStorageException.class)
