@@ -3,15 +3,16 @@ package org.github.guardjo.mypocketwebtoon.admin.repository;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -20,7 +21,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest
 @Testcontainers
@@ -44,13 +45,6 @@ class UserInfoRepositoryTest {
         testAdmin = adminInfoRepository.save(adminInfoEntity);
     }
 
-    @AfterEach
-    void tearDown() {
-        userInfoRepository.deleteAll();
-        adminInfoRepository.deleteAll();
-        adminRoleRepository.deleteAll();
-    }
-
     @DisplayName("저장된 UserInfoEntity 페이지 조회")
     @ParameterizedTest
     @MethodSource("paginationParams")
@@ -72,6 +66,31 @@ class UserInfoRepositoryTest {
         assertThat(expected.getContent()).usingRecursiveComparison()
                 .ignoringFields("createdAt", "modifiedAt")
                 .isEqualTo(userInfoEntityList.subList(Math.min(pageNumber * pageSize, userInfoEntityList.size()), Math.min((pageNumber + 1) * pageSize, userInfoEntityList.size())));
+    }
+
+    @DisplayName("신규 UserInfoEntity 저장")
+    @Test
+    void test_save() {
+        UserInfoEntity expected = TestDataGenerator.userInfoEntity("test", testAdmin);
+
+        userInfoRepository.save(expected);
+
+        UserInfoEntity actual = userInfoRepository.findById(expected.getId())
+                .orElseThrow();
+
+        assertThat(actual).usingRecursiveComparison()
+                .ignoringFields("createdAt", "modifiedAt")
+                .isEqualTo(expected);
+    }
+
+    @DisplayName("신규 UserInfoEntity 저장 : 중복 키값 저장 실패")
+    @Test
+    void test_save_duplicateKey() {
+        UserInfoEntity expected = TestDataGenerator.userInfoEntity("test", testAdmin);
+
+        assertThatCode(() -> userInfoRepository.saveAndFlush(expected)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> userInfoRepository.saveAndFlush(TestDataGenerator.userInfoEntity("test2", expected.getNickname(), testAdmin)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private static Stream<Arguments> paginationParams() {

@@ -1,10 +1,13 @@
 package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.UserApiDocs;
+import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,9 +15,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -31,5 +33,15 @@ public class UserController implements UserApiDocs {
         Page<UserInfo> userInfoPage = userService.getUserList(pageable);
 
         return BaseResponse.of(HttpStatus.OK, new PagedModel<>(userInfoPage));
+    }
+
+    @PostMapping
+    @Override
+    public BaseResponse<String> createUser(@AuthenticationPrincipal AdminUserPrincipal principal, @RequestBody @Valid UserCreateRequest userCreateRequest) {
+        log.info("POST: /api/v1/users, adminId = {}, userId = {}", principal.getUsername(), userCreateRequest.id());
+
+        userService.createUser(userCreateRequest, principal.getUsername());
+
+        return BaseResponse.defaultSuccessResponse();
     }
 }

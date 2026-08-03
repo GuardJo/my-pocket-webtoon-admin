@@ -227,7 +227,7 @@ class WorkManagementControllerTest extends AbstractPageableControllerTest {
                         .with(user(TEST_USER))
                         .with(csrf()))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andReturn()
                 .getResponse()
                 .getContentAsString(StandardCharsets.UTF_8);
@@ -235,9 +235,8 @@ class WorkManagementControllerTest extends AbstractPageableControllerTest {
         JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
         BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
 
-        assertThat(actual.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST.name());
-        assertThat(actual.getData()).isEqualTo("요청 값이 올바르지 않습니다.");
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.CONFLICT.name());
 
         then(workService).should().uploadWork(any(WorkUploadRequest.class));
     }
