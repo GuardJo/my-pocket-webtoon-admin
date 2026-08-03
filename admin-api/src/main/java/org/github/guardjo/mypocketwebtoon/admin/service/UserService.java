@@ -19,6 +19,8 @@ public interface UserService {
      *
      * @param createRequest 회원 등록 정보
      * @param adminId       등록 요청 관리자 계정 아이디
+     * @throws org.springframework.dao.DataIntegrityViolationException 회원닉네임이 이미 존재하는 경우
+     * @throws org.springframework.dao.DuplicateKeyException           회원 아이디가 이미 존재하는 경우
      */
     void createUser(UserCreateRequest createRequest, String adminId);
 }

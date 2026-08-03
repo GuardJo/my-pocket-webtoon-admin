@@ -12,10 +12,15 @@ import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -27,12 +32,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -142,6 +147,8 @@ class UserControllerTest extends AbstractPageableControllerTest {
 
         String requestContent = objectMapper.writeValueAsString(createRequest);
 
+        willDoNothing().given(userService).createUser(eq(createRequest), eq(TEST_USER.getUsername()));
+
         String response = mockMvc.perform(post("/api/v1/users")
                         .content(requestContent)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -218,5 +225,48 @@ class UserControllerTest extends AbstractPageableControllerTest {
                 .andExpect(status().isUnauthorized());
 
         then(userService).should(never()).createUser(any(), any());
+    }
+
+    @DisplayName("POST : /api/v1/users : 중복된 정보가 있을 경우")
+    @ParameterizedTest
+    @MethodSource("duplicateExceptionParams")
+    void test_createUser_duplicate_data(Exception e) throws Exception {
+        UserCreateRequest createRequest = new UserCreateRequest(
+                "test",
+                "테스터",
+                "tester01",
+                "password1!",
+                null
+        );
+
+        String requestContent = objectMapper.writeValueAsString(createRequest);
+
+        willThrow(e.getClass()).given(userService).createUser(eq(createRequest), eq(TEST_USER.getUsername()));
+
+        String response = mockMvc.perform(post("/api/v1/users")
+                        .content(requestContent)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(user(TEST_USER))
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isConflict())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.CONFLICT.name());
+
+        then(userService).should().createUser(eq(createRequest), eq(TEST_USER.getUsername()));
+    }
+
+    private static Stream<Arguments> duplicateExceptionParams() {
+        return Stream.of(
+                Arguments.of(new DataIntegrityViolationException("Duplicate entry 'test' for key 'username'")),
+                Arguments.of(new DuplicateKeyException("Duplicate entry 'tester01' for key 'id'"))
+        );
     }
 }
