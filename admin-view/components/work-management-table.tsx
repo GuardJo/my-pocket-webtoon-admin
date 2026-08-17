@@ -65,6 +65,7 @@ export default function WorkManagementTable() {
         <div className="flex-1 flex flex-col bg-gray-50">
             {/* Header */}
             <div className="border-b border-gray-200 bg-white px-8 py-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">작품 관리</h1>
                 <div className="flex items-center justify-between">
                     <p className="text-gray-600">
                         총 {totalItems}개의 작품이 등록되어 있습니다.
