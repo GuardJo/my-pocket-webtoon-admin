@@ -10,6 +10,7 @@ import {BaseResponse, Pageable, SerialState, WorkInfo} from "@/lib/models";
 import Image from "next/image";
 import {useQuery} from "@tanstack/react-query";
 import {workService} from "@/lib/work-service";
+import Pagination from "@/components/pagination";
 
 function getStatusBadgeColor(
     status: SerialState
@@ -144,42 +145,8 @@ export default function WorkManagementTable() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between mt-6">
-                    <p className="text-sm text-gray-600">
-                        Showing {currentPage + 1} to {works.length} of {totalItems} results
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            disabled={currentPage === 0}
-                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                        >
-                            Previous
-                        </Button>
-                        {Array.from({length: Math.min(3, totalPages)}, (_, i) => (
-                            <Button
-                                key={i + 1}
-                                variant={currentPage === i ? 'default' : 'outline'}
-                                onClick={() => setCurrentPage(i)}
-                                className={
-                                    currentPage === i ? 'bg-blue-700 text-white' : ''
-                                }
-                            >
-                                {i + 1}
-                            </Button>
-                        ))}
-                        {totalPages > 3 && <span className="text-gray-600">...</span>}
-                        <Button
-                            variant="outline"
-                            disabled={(currentPage + 1) === totalPages}
-                            onClick={() =>
-                                setCurrentPage(Math.min(totalPages, currentPage + 1))
-                            }
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
+                <Pagination totalPage={totalPages} currentPage={currentPage} totalElement={totalItems}
+                            pageSize={works.length} onPageChange={setCurrentPage}/>
             </div>
         </div>
     );

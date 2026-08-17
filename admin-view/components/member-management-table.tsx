@@ -1,6 +1,7 @@
 import {MemberInfo, Pageable} from "@/lib/models";
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import Pagination from "@/components/pagination";
 
 const mockMembers: MemberInfo[] = [
     {
@@ -60,7 +61,7 @@ type FilterKey = (typeof filterTabs)[number]['key'];
 
 export default function MemberManagementTable() {
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(0);
 
     // TODO API 연동하기
     const pageInfo = mockMemberPage.page;
@@ -189,50 +190,8 @@ export default function MemberManagementTable() {
                 </Table>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Showing {currentPage + 1} to {mockMembers.length} of {totalItems} entries
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                            disabled={currentPage === 0}
-                            className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-                        {Array.from({length: Math.min(3, totalPages)}, (_, i) => (
-                            <button
-                                key={i + 1}
-                                onClick={() => setCurrentPage(i)}
-                                className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${
-                                    currentPage === i
-                                        ? 'bg-indigo-900 text-white'
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
-                        {totalPages > 3 && <span className="text-gray-400 px-1">...</span>}
-                        <button
-                            onClick={() => setCurrentPage(totalPages - 1)}
-                            className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${
-                                currentPage + 1 === totalPages
-                                    ? 'bg-indigo-900 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            {mockMemberPage.page.totalPages}
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                            className="flex items-center gap-1 text-sm font-semibold text-indigo-900 hover:text-indigo-700"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
+                <Pagination totalPage={totalPages} currentPage={currentPage} totalElement={totalItems}
+                            pageSize={mockMembers.length} onPageChange={setCurrentPage}/>
             </div>
         </>
     )
