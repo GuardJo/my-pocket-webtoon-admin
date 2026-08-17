@@ -78,7 +78,7 @@ export default function MemberManagementTable() {
                             key={tab.key}
                             onClick={() => {
                                 setActiveFilter(tab.key);
-                                setCurrentPage(1);
+                                setCurrentPage(0);
                             }}
                             className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-colors ${
                                 activeFilter === tab.key

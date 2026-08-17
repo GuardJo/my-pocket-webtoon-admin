@@ -81,3 +81,13 @@ export interface MemberInfo {
     signupDate: string,
     activate: boolean
 }
+
+/*
+회원 매트릭 정보
+*/
+export interface MemberMetrics {
+    totalUsers: number,
+    activeUsers: number,
+    pendindUsers: number,
+    retentionRate: number,
+}
