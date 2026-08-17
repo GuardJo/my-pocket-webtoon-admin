@@ -1,0 +1,239 @@
+import {MemberInfo, Pageable} from "@/lib/models";
+import {useState} from "react";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+
+const mockMembers: MemberInfo[] = [
+    {
+        id: 'USR-8912',
+        name: '김이름',
+        nickname: '김이룸',
+        signupDate: '2023-10-15',
+        activate: true
+    },
+    {
+        id: 'USR-9021',
+        name: '박지호',
+        nickname: '박지호캡',
+        signupDate: '2023-11-02',
+        activate: false
+    },
+    {
+        id: 'USR-8763',
+        name: '최수정',
+        nickname: '수정공주',
+        signupDate: '2023-09-28',
+        activate: true
+    },
+    {
+        id: 'USR-9102',
+        name: '이현우',
+        nickname: '이현우22',
+        signupDate: '2023-11-04',
+        activate: true
+    },
+    {
+        id: 'USR-8551',
+        name: 'Rose',
+        nickname: 'Sienna Rose',
+        signupDate: '2023-08-12',
+        activate: false
+    },
+];
+
+const mockMemberPage: Pageable<MemberInfo> = {
+    content: mockMembers,
+    page: {
+        size: 10,
+        page: 0,
+        totalElements: 999,
+        totalPages: 99
+    }
+}
+
+const filterTabs = [
+    {key: 'all', label: 'All Users'},
+    {key: 'pending', label: 'Pending'},
+    {key: 'active', label: 'Active'},
+] as const;
+
+type FilterKey = (typeof filterTabs)[number]['key'];
+
+export default function MemberManagementTable() {
+    const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // TODO API 연동하기
+    const pageInfo = mockMemberPage.page;
+    const totalItems = pageInfo?.totalElements ?? 0;
+    const totalPages = pageInfo?.totalPages ?? 0;
+
+    return (
+        <>
+            {/* Filters Row */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                    {filterTabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            onClick={() => {
+                                setActiveFilter(tab.key);
+                                setCurrentPage(1);
+                            }}
+                            className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-colors ${
+                                activeFilter === tab.key
+                                    ? 'bg-indigo-900 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="border-b border-gray-200 hover:bg-transparent">
+                            <TableHead
+                                className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                User ID
+                            </TableHead>
+                            <TableHead
+                                className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Name
+                            </TableHead>
+                            <TableHead
+                                className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Nickname
+                            </TableHead>
+                            <TableHead
+                                className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Signup Date
+                            </TableHead>
+                            <TableHead
+                                className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Status
+                            </TableHead>
+                            <TableHead
+                                className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">
+                                Actions
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {mockMembers.map((member) => (
+                            <TableRow
+                                key={member.id}
+                                className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                                <TableCell className="px-6 py-5 text-sm text-gray-500">
+                                    #{member.id}
+                                </TableCell>
+                                <TableCell className="px-6 py-5">
+                    <span className="font-semibold text-gray-900">
+                      {member.name}
+                    </span>
+                                </TableCell>
+                                <TableCell className="px-6 py-5 text-sm text-gray-600">
+                                    {member.nickname}
+                                </TableCell>
+                                <TableCell className="px-6 py-5 text-sm text-gray-600">
+                                    {member.signupDate}
+                                </TableCell>
+                                <TableCell className="px-6 py-5">
+                                    {member.activate ? (
+                                        <span
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"/>
+                        ACTIVE
+                      </span>
+                                    ) : (
+                                        <span
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500"/>
+                        PENDING
+                      </span>
+                                    )}
+                                </TableCell>
+                                <TableCell className="px-6 py-5">
+                                    <div className="flex items-center justify-end gap-3">
+                                        {member.activate ? (
+                                            <button
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-sm font-semibold text-red-600 hover:text-red-800"
+                                            >
+                                                탈퇴 처리
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                                                >
+                                                    수락
+                                                </button>
+                                                <button
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="text-sm font-semibold text-red-600 hover:text-red-800"
+                                                >
+                                                    거절
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Showing {currentPage + 1} to {mockMembers.length} of {totalItems} entries
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                            disabled={currentPage === 0}
+                            className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        {Array.from({length: Math.min(3, totalPages)}, (_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => setCurrentPage(i)}
+                                className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${
+                                    currentPage === i
+                                        ? 'bg-indigo-900 text-white'
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                        {totalPages > 3 && <span className="text-gray-400 px-1">...</span>}
+                        <button
+                            onClick={() => setCurrentPage(totalPages - 1)}
+                            className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${
+                                currentPage + 1 === totalPages
+                                    ? 'bg-indigo-900 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                        >
+                            {mockMemberPage.page.totalPages}
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            className="flex items-center gap-1 text-sm font-semibold text-indigo-900 hover:text-indigo-700"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
