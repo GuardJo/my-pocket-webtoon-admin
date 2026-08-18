@@ -1,55 +1,9 @@
-import {MemberInfo, Pageable} from "@/lib/models";
+import {BaseResponse, MemberInfo, Pageable} from "@/lib/models";
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import Pagination from "@/components/pagination";
-
-const mockMembers: MemberInfo[] = [
-    {
-        id: 'USR-8912',
-        name: '김이름',
-        nickname: '김이룸',
-        signupDate: '2023-10-15',
-        activate: true
-    },
-    {
-        id: 'USR-9021',
-        name: '박지호',
-        nickname: '박지호캡',
-        signupDate: '2023-11-02',
-        activate: false
-    },
-    {
-        id: 'USR-8763',
-        name: '최수정',
-        nickname: '수정공주',
-        signupDate: '2023-09-28',
-        activate: true
-    },
-    {
-        id: 'USR-9102',
-        name: '이현우',
-        nickname: '이현우22',
-        signupDate: '2023-11-04',
-        activate: true
-    },
-    {
-        id: 'USR-8551',
-        name: 'Rose',
-        nickname: 'Sienna Rose',
-        signupDate: '2023-08-12',
-        activate: false
-    },
-];
-
-const mockMemberPage: Pageable<MemberInfo> = {
-    content: mockMembers,
-    page: {
-        size: 10,
-        page: 0,
-        totalElements: 999,
-        totalPages: 99
-    }
-}
+import {useQuery} from "@tanstack/react-query";
+import {memberService} from "@/lib/member-service";
 
 const filterTabs = [
     {key: 'all', label: 'All Users'},
@@ -60,11 +14,26 @@ const filterTabs = [
 type FilterKey = (typeof filterTabs)[number]['key'];
 
 export default function MemberManagementTable() {
+    const itemsPerPage = 10;
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
     const [currentPage, setCurrentPage] = useState(0);
 
-    // TODO API 연동하기
-    const pageInfo = mockMemberPage.page;
+    const {data} = useQuery<BaseResponse<Pageable<MemberInfo>>>({
+        queryKey: ['getMembers', currentPage, itemsPerPage],
+        queryFn: async () => {
+            const response = await memberService.getMembers(currentPage, itemsPerPage);
+
+            if (response.status !== 200) {
+                console.error('Error: ', response.status, ', cause: ', response.data ?? 'no data');
+                throw new Error('회원 목록 조회에 실패하였습니다.');
+            }
+
+            return response;
+        }
+    })
+
+    const members: MemberInfo[] = data?.data.content ?? [];
+    const pageInfo = data?.data.page;
     const totalItems = pageInfo?.totalElements ?? 0;
     const totalPages = pageInfo?.totalPages ?? 0;
 
@@ -123,7 +92,7 @@ export default function MemberManagementTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {mockMembers.map((member) => (
+                        {members.map((member) => (
                             <TableRow
                                 key={member.id}
                                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -191,7 +160,7 @@ export default function MemberManagementTable() {
 
                 {/* Pagination */}
                 <Pagination totalPage={totalPages} currentPage={currentPage} totalElement={totalItems}
-                            pageSize={mockMembers.length} onPageChange={setCurrentPage}/>
+                            pageSize={members.length} onPageChange={setCurrentPage}/>
             </div>
         </>
     )
