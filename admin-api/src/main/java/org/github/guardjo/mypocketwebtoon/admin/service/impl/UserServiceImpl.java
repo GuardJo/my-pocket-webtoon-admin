@@ -6,6 +6,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.UserInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
@@ -58,5 +59,17 @@ public class UserServiceImpl implements UserService {
         userInfoRepository.save(userInfoEntity);
 
         log.info("Created user, createId= {}, adminId = {}", userInfoEntity.getId(), userInfoEntity.getAdminInfo().getId());
+    }
+
+    @Override
+    public UserManagementMetric getUserManagementMetric() {
+        // TODO 기능 구현 예정
+        return new UserManagementMetric(
+                100L,
+                50L,
+                50L,
+                50.0f,
+                10L
+        );
     }
 }

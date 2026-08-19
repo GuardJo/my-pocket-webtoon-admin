@@ -2,6 +2,7 @@ package org.github.guardjo.mypocketwebtoon.admin.service;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,4 +24,11 @@ public interface UserService {
      * @throws org.springframework.dao.DuplicateKeyException           회원 아이디가 이미 존재하는 경우
      */
     void createUser(UserCreateRequest createRequest, String adminId);
+
+    /**
+     * 현재 일자 기준 관리중인 회원 관련 매트릭 정보를 계산하여 반환한다.
+     *
+     * @return 계산된 회원 매트릭 정보
+     */
+    UserManagementMetric getUserManagementMetric();
 }
