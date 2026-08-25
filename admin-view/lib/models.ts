@@ -70,3 +70,25 @@ export interface EpisodeInfo {
     episodeImageTotalCount: number,
     lastUpdateDate: string
 }
+
+/*
+회원 정보
+ */
+export interface MemberInfo {
+    id: string,
+    name: string,
+    nickname: string,
+    signupDate: string,
+    activate: boolean
+}
+
+/*
+회원 매트릭 정보
+*/
+export interface MemberMetrics {
+    totalUsers: number,
+    activateUsers: number,
+    pendingUsers: number,
+    retentionRate: number,
+    monthlyMemberGrowth: number,
+}
