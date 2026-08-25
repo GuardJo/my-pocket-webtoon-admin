@@ -1,7 +1,9 @@
 package org.github.guardjo.mypocketwebtoon.admin.repository;
 
+import jakarta.persistence.EntityManager;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserMetricCountInfo;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -35,6 +39,9 @@ class UserInfoRepositoryTest {
 
     @Autowired
     private AdminRoleRepository adminRoleRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private AdminInfoEntity testAdmin;
 
@@ -91,6 +98,46 @@ class UserInfoRepositoryTest {
         assertThatCode(() -> userInfoRepository.saveAndFlush(expected)).doesNotThrowAnyException();
         assertThatThrownBy(() -> userInfoRepository.saveAndFlush(TestDataGenerator.userInfoEntity("test2", expected.getNickname(), testAdmin)))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @DisplayName("기준 월의 회원 관리 지표 계산 및 조회")
+    @Test
+    void calculateUserManagementMetric() {
+        LocalDate currentMonthStart = LocalDate.of(2026, 8, 1);
+        List<UserInfoEntity> users = List.of(
+                TestDataGenerator.userInfoEntity("before-period", true, testAdmin),
+                TestDataGenerator.userInfoEntity("previous-active", true, testAdmin),
+                TestDataGenerator.userInfoEntity("previous-pending", false, testAdmin),
+                TestDataGenerator.userInfoEntity("current-pending", false, testAdmin)
+        );
+        userInfoRepository.saveAllAndFlush(users);
+
+        updateCreatedAt("before-period", LocalDateTime.of(2026, 6, 30, 23, 59, 59));
+        updateCreatedAt("previous-active", LocalDateTime.of(2026, 7, 1, 0, 0));
+        updateCreatedAt("previous-pending", LocalDateTime.of(2026, 7, 31, 23, 59, 59));
+        updateCreatedAt("current-pending", LocalDateTime.of(2026, 8, 1, 0, 0));
+        entityManager.clear();
+
+        UserMetricCountInfo actual = userInfoRepository.calculateUserManagementMetric(currentMonthStart);
+
+        assertThat(actual).isEqualTo(new UserMetricCountInfo(
+                4L,
+                2L,
+                2L,
+                1L,
+                2L
+        ));
+    }
+
+    private void updateCreatedAt(String id, LocalDateTime createdAt) {
+        entityManager.createNativeQuery("""
+                        update user_info
+                        set created_at = :createdAt
+                        where id = :id
+                        """)
+                .setParameter("createdAt", createdAt)
+                .setParameter("id", id)
+                .executeUpdate();
     }
 
     private static Stream<Arguments> paginationParams() {

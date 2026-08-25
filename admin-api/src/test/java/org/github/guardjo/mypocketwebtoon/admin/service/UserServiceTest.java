@@ -4,6 +4,8 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserMetricCountInfo;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.UserInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.impl.UserServiceImpl;
@@ -125,5 +127,29 @@ class UserServiceTest {
         then(userInfoRepository).should().findById(eq(createRequest.id()));
         then(passwordEncoder).shouldHaveNoInteractions();
         then(userInfoRepository).shouldHaveNoMoreInteractions();
+    }
+
+    @DisplayName("회원 관리 메트릭 조회")
+    @Test
+    void test_getUserManagementMetric() {
+        UserMetricCountInfo countInfo = new UserMetricCountInfo(100L, 60L, 40L, 25L, 15L);
+
+        given(userInfoRepository.calculateUserManagementMetric(any(LocalDate.class))).willReturn(countInfo);
+
+        UserManagementMetric actual = userService.getUserManagementMetric();
+
+        assertThat(actual).isEqualTo(new UserManagementMetric(100L, 60L, 40L, 60.0f, 10L));
+        then(userInfoRepository).should().calculateUserManagementMetric(any(LocalDate.class));
+    }
+
+    @DisplayName("회원 관리 메트릭 조회 : Repository에서 예외가 발생한 경우")
+    @Test
+    void test_getUserManagementMetric_repository_exception() {
+        RuntimeException repositoryException = new RuntimeException("Failed to calculate user management metric");
+
+        given(userInfoRepository.calculateUserManagementMetric(any(LocalDate.class))).willThrow(repositoryException);
+
+        assertThatThrownBy(userService::getUserManagementMetric).isSameAs(repositoryException);
+        then(userInfoRepository).should().calculateUserManagementMetric(any(LocalDate.class));
     }
 }

@@ -7,6 +7,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
 import org.github.guardjo.mypocketwebtoon.admin.util.TestDataGenerator;
@@ -261,6 +262,33 @@ class UserControllerTest extends AbstractPageableControllerTest {
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.CONFLICT.name());
 
         then(userService).should().createUser(eq(createRequest), eq(TEST_USER.getUsername()));
+    }
+
+    @DisplayName("GET : /api/v1/users/metric")
+    @Test
+    void test_getUserManagementMetric() throws Exception {
+        UserManagementMetric expected = new UserManagementMetric(100L, 50L, 50L, 50.0f, 10L);
+
+        given(userService.getUserManagementMetric()).willReturn(expected);
+
+        String response = mockMvc.perform(get("/api/v1/users/metric")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(user(TEST_USER)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, UserManagementMetric.class);
+        BaseResponse<UserManagementMetric> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual).isNotNull();
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
+        assertThat(actual.getData()).isEqualTo(expected);
+
+        then(userService).should().getUserManagementMetric();
     }
 
     private static Stream<Arguments> duplicateExceptionParams() {

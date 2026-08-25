@@ -116,13 +116,21 @@ public class TestDataGenerator {
         return userInfoEntity(id, id + "_name", adminInfoEntity);
     }
 
+    public static UserInfoEntity userInfoEntity(String id, boolean activate, AdminInfoEntity adminInfoEntity) {
+        return userInfoEntity(id, id + "_name", activate, adminInfoEntity);
+    }
+
     public static UserInfoEntity userInfoEntity(String id, String nickname, AdminInfoEntity adminInfoEntity) {
+        return userInfoEntity(id, nickname, true, adminInfoEntity);
+    }
+
+    public static UserInfoEntity userInfoEntity(String id, String nickname, boolean activate, AdminInfoEntity adminInfoEntity) {
         return UserInfoEntity.builder()
                 .id(id)
                 .name(id + "_name")
                 .nickname(nickname)
                 .password("{noop}test123!")
-                .activate(true)
+                .activate(activate)
                 .birthYmd(LocalDate.now())
                 .adminInfo(adminInfoEntity)
                 .build();

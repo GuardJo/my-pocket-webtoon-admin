@@ -7,6 +7,7 @@ import org.github.guardjo.mypocketwebtoon.admin.api.docs.UserApiDocs;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
 import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
 import org.springframework.data.domain.Page;
@@ -43,5 +44,15 @@ public class UserController implements UserApiDocs {
         userService.createUser(userCreateRequest, principal.getUsername());
 
         return BaseResponse.defaultSuccessResponse();
+    }
+
+    @GetMapping("/metric")
+    @Override
+    public BaseResponse<UserManagementMetric> getUserManagementMetric() {
+        log.info("GET: /api/v1/users/metric");
+
+        UserManagementMetric metric = userService.getUserManagementMetric();
+
+        return BaseResponse.of(HttpStatus.OK, metric);
     }
 }
