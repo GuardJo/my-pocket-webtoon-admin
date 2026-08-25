@@ -101,9 +101,9 @@ export default function MemberManagementTable() {
                                     #{member.id}
                                 </TableCell>
                                 <TableCell className="px-6 py-5">
-                    <span className="font-semibold text-gray-900">
-                      {member.name}
-                    </span>
+                                    <span className="font-semibold text-gray-900">
+                                      {member.name}
+                                    </span>
                                 </TableCell>
                                 <TableCell className="px-6 py-5 text-sm text-gray-600">
                                     {member.nickname}
@@ -115,15 +115,15 @@ export default function MemberManagementTable() {
                                     {member.activate ? (
                                         <span
                                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"/>
-                        ACTIVE
-                      </span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"/>
+                                            ACTIVE
+                                        </span>
                                     ) : (
                                         <span
                                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500"/>
-                        PENDING
-                      </span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"/>
+                                            PENDING
+                                        </span>
                                     )}
                                 </TableCell>
                                 <TableCell className="px-6 py-5">
