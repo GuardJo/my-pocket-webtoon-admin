@@ -87,7 +87,8 @@ export interface MemberInfo {
 */
 export interface MemberMetrics {
     totalUsers: number,
-    activeUsers: number,
-    pendindUsers: number,
+    activateUsers: number,
+    pendingUsers: number,
     retentionRate: number,
+    monthlyMemberGrowth: number,
 }
