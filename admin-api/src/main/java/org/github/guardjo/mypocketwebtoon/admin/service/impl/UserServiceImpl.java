@@ -7,6 +7,7 @@ import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserMetricCountInfo;
 import org.github.guardjo.mypocketwebtoon.admin.repository.AdminInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.repository.UserInfoRepository;
 import org.github.guardjo.mypocketwebtoon.admin.service.UserService;
@@ -16,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -63,13 +66,31 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserManagementMetric getUserManagementMetric() {
-        // TODO 기능 구현 예정
+        LocalDate currentDate = LocalDate.now();
+
+        log.info("Getting user management metric, currentDate = {}", currentDate);
+
+        UserMetricCountInfo countInfo = userInfoRepository.calculateUserManagementMetric(currentDate);
+
+        return convertMetricInfo(countInfo);
+    }
+
+    private UserManagementMetric convertMetricInfo(UserMetricCountInfo countInfo) {
         return new UserManagementMetric(
-                100L,
-                50L,
-                50L,
-                50.0f,
-                10L
+                countInfo.totalCount(),
+                countInfo.activeCount(),
+                countInfo.pendingCount(),
+                calculateRetentionRate(countInfo.totalCount(), countInfo.activeCount()),
+                countInfo.currentMonthCount() - countInfo.lastMonthCount()
         );
+    }
+
+    // FIXME 추후 유지율 관련 계산 방식 변경 에정 (단순 활성 비율 ->  근 한달 안에 로그인한 회원 비율)
+    private float calculateRetentionRate(long totalCount, long activeCount) {
+        if (activeCount == 0) {
+            return 0.0f;
+        }
+
+        return Math.round((activeCount * 100f / totalCount) * 100f) / 100f;
     }
 }
