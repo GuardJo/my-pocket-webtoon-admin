@@ -2,8 +2,10 @@ package org.github.guardjo.mypocketwebtoon.admin.model.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 /*
 회원 상세 정보
@@ -36,4 +38,16 @@ public record UserDetailInfo(
         @Schema(description = "승인관리자 아이디", example = "admin")
         String registerAdminId
 ) {
+    public static UserDetailInfo from(UserInfoEntity entity) {
+        return new UserDetailInfo(
+                entity.getId(),
+                entity.getName(),
+                entity.getNickname(),
+                Objects.nonNull(entity.getBirthYmd()) ? entity.getBirthYmd().atStartOfDay().toLocalDate() : null,
+                entity.getCreatedAt().toLocalDate(),
+                Objects.nonNull(entity.getModifiedAt()) ? entity.getModifiedAt().toLocalDate() : null,
+                entity.isActivate(),
+                Objects.nonNull(entity.getAdminInfo()) ? entity.getAdminInfo().getId() : null
+        );
+    }
 }

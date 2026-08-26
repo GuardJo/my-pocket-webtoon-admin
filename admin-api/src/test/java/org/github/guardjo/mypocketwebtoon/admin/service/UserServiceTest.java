@@ -1,8 +1,10 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserMetricCountInfo;
@@ -151,5 +153,43 @@ class UserServiceTest {
 
         assertThatThrownBy(userService::getUserManagementMetric).isSameAs(repositoryException);
         then(userInfoRepository).should().calculateUserManagementMetric(any(LocalDate.class));
+    }
+
+    @DisplayName("회원 상세 정보 조회")
+    @Test
+    void test_getUserDetail() {
+        String userId = "test-user";
+        UserInfoEntity userInfoEntity = TestDataGenerator.userInfoEntity(userId, "테스트닉네임", TEST_ADMIN);
+
+        given(userInfoRepository.findById(eq(userId))).willReturn(Optional.of(userInfoEntity));
+
+        UserDetailInfo actual = userService.getUserDetail(userId);
+
+        assertThat(actual).isEqualTo(new UserDetailInfo(
+                userInfoEntity.getId(),
+                userInfoEntity.getName(),
+                userInfoEntity.getNickname(),
+                userInfoEntity.getBirthYmd(),
+                userInfoEntity.getCreatedAt().toLocalDate(),
+                userInfoEntity.getModifiedAt().toLocalDate(),
+                userInfoEntity.isActivate(),
+                userInfoEntity.getAdminInfo().getId()
+        ));
+
+        then(userInfoRepository).should().findById(eq(userId));
+    }
+
+    @DisplayName("회원 상세 정보 조회 : 회원 조회 실패")
+    @Test
+    void test_getUserDetail_notFound() {
+        String userId = "unknown";
+
+        given(userInfoRepository.findById(eq(userId))).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getUserDetail(userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("회원 정보를 찾을 수 없습니다.");
+
+        then(userInfoRepository).should().findById(eq(userId));
     }
 }

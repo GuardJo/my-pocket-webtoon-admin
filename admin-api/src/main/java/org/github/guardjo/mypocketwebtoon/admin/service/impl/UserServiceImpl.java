@@ -1,5 +1,6 @@
 package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
@@ -80,17 +81,10 @@ public class UserServiceImpl implements UserService {
     public UserDetailInfo getUserDetail(String userId) {
         log.debug("Getting user detail, userId = {}", userId);
 
-        // TODO 기능 구현 예정
-        return new UserDetailInfo(
-                userId,
-                "테스터",
-                "tester",
-                LocalDate.of(1996, 2, 20),
-                LocalDate.now(),
-                LocalDate.now(),
-                true,
-                "admin"
-        );
+        UserInfoEntity userInfoEntity = userInfoRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        return UserDetailInfo.from(userInfoEntity);
     }
 
     private UserManagementMetric convertMetricInfo(UserMetricCountInfo countInfo) {
