@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserMetricCountInfo;
@@ -73,6 +74,23 @@ public class UserServiceImpl implements UserService {
         UserMetricCountInfo countInfo = userInfoRepository.calculateUserManagementMetric(currentDate);
 
         return convertMetricInfo(countInfo);
+    }
+
+    @Override
+    public UserDetailInfo getUserDetail(String userId) {
+        log.debug("Getting user detail, userId = {}", userId);
+
+        // TODO 기능 구현 예정
+        return new UserDetailInfo(
+                userId,
+                "테스터",
+                "tester",
+                LocalDate.of(1996, 2, 20),
+                LocalDate.now(),
+                LocalDate.now(),
+                true,
+                "admin"
+        );
     }
 
     private UserManagementMetric convertMetricInfo(UserMetricCountInfo countInfo) {

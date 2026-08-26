@@ -3,8 +3,11 @@ package org.github.guardjo.mypocketwebtoon.admin.api.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
@@ -18,8 +21,11 @@ public interface UserApiDocs {
     BaseResponse<PagedModel<UserInfo>> getUsers(@ParameterObject Pageable pageable);
 
     @Operation(summary = "회원 등록", description = "신규 회원 정보를 등록한다.")
-    BaseResponse<String> createUser(@Parameter(hidden = true) AdminUserPrincipal principal, UserCreateRequest userCreateRequest);
+    BaseResponse<String> createUser(@Parameter(hidden = true) AdminUserPrincipal principal, @Valid UserCreateRequest userCreateRequest);
 
     @Operation(summary = "회원 관리 매트릭 정보 조회", description = "전체 회원 수, 유지율 등 매트릭 정보를 반환한다.")
     BaseResponse<UserManagementMetric> getUserManagementMetric();
+
+    @Operation(summary = "특정 회원 정보 조회", description = "주어진 식별키에 해당하는 회원 상세 정보를 반환한다.")
+    BaseResponse<UserDetailInfo> getUserDetail(@NotBlank String userId);
 }
