@@ -187,7 +187,7 @@ export default function WorkInfo({workDetailInfo}: WorkInfoProps) {
                                 수정일자
                             </p>
                             <p className="text-3xl font-bold text-gray-900">
-                                {detailsFormData.lastUpdateDate ? new Date(detailsFormData.lastUpdateDate).toLocaleDateString('ko-KR') : 'N/A'}
+                                {detailsFormData.lastUpdateDate ?? 'N/A'}
                             </p>
                         </div>
                         <div>
