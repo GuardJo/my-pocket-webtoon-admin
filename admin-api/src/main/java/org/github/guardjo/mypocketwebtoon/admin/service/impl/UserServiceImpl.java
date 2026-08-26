@@ -1,10 +1,12 @@
 package org.github.guardjo.mypocketwebtoon.admin.service.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.AdminInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.domain.UserInfoEntity;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserMetricCountInfo;
@@ -73,6 +75,16 @@ public class UserServiceImpl implements UserService {
         UserMetricCountInfo countInfo = userInfoRepository.calculateUserManagementMetric(currentDate);
 
         return convertMetricInfo(countInfo);
+    }
+
+    @Override
+    public UserDetailInfo getUserDetail(String userId) {
+        log.debug("Getting user detail, userId = {}", userId);
+
+        UserInfoEntity userInfoEntity = userInfoRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        return UserDetailInfo.from(userInfoEntity);
     }
 
     private UserManagementMetric convertMetricInfo(UserMetricCountInfo countInfo) {

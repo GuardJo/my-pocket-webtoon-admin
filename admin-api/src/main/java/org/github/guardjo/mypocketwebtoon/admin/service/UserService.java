@@ -1,6 +1,7 @@
 package org.github.guardjo.mypocketwebtoon.admin.service;
 
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.springframework.data.domain.Page;
@@ -31,4 +32,13 @@ public interface UserService {
      * @return 계산된 회원 매트릭 정보
      */
     UserManagementMetric getUserManagementMetric();
+
+    /**
+     * 주어진 회원 식별키에 해당하는 회원에 대한 상세 정보를 반환한다.
+     *
+     * @param userId 회원 식별키
+     * @return 회원 상세 정보
+     * @throws jakarta.persistence.EntityNotFoundException 회원 정보를 찾을 수 없는 경우
+     */
+    UserDetailInfo getUserDetail(String userId);
 }

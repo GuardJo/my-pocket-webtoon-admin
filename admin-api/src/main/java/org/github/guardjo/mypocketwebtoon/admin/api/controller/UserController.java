@@ -1,11 +1,11 @@
 package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.github.guardjo.mypocketwebtoon.admin.api.docs.UserApiDocs;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
@@ -38,7 +38,7 @@ public class UserController implements UserApiDocs {
 
     @PostMapping
     @Override
-    public BaseResponse<String> createUser(@AuthenticationPrincipal AdminUserPrincipal principal, @RequestBody @Valid UserCreateRequest userCreateRequest) {
+    public BaseResponse<String> createUser(@AuthenticationPrincipal AdminUserPrincipal principal, @RequestBody UserCreateRequest userCreateRequest) {
         log.info("POST: /api/v1/users, adminId = {}, userId = {}", principal.getUsername(), userCreateRequest.id());
 
         userService.createUser(userCreateRequest, principal.getUsername());
@@ -54,5 +54,15 @@ public class UserController implements UserApiDocs {
         UserManagementMetric metric = userService.getUserManagementMetric();
 
         return BaseResponse.of(HttpStatus.OK, metric);
+    }
+
+    @GetMapping("/{userId}")
+    @Override
+    public BaseResponse<UserDetailInfo> getUserDetail(@PathVariable String userId) {
+        log.info("GET: /api/v1/users/{}", userId);
+
+        UserDetailInfo userDetail = userService.getUserDetail(userId);
+
+        return BaseResponse.of(HttpStatus.OK, userDetail);
     }
 }

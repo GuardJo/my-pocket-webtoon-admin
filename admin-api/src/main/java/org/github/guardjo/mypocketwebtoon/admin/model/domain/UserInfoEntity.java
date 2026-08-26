@@ -36,6 +36,6 @@ public class UserInfoEntity extends BaseEntity {
     private LocalDate birthYmd;
 
     @ManyToOne
-    @JoinColumn(name = "register_admin_id", nullable = false)
+    @JoinColumn(name = "register_admin_id")
     private AdminInfoEntity adminInfo;
 }

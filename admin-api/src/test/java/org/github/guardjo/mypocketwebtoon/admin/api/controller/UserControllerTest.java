@@ -2,10 +2,12 @@ package org.github.guardjo.mypocketwebtoon.admin.api.controller;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import org.github.guardjo.mypocketwebtoon.admin.config.StaticResourceConfig;
 import org.github.guardjo.mypocketwebtoon.admin.model.request.UserCreateRequest;
 import org.github.guardjo.mypocketwebtoon.admin.model.response.BaseResponse;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.AdminInfo;
+import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserDetailInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserInfo;
 import org.github.guardjo.mypocketwebtoon.admin.model.vo.UserManagementMetric;
 import org.github.guardjo.mypocketwebtoon.admin.security.AdminUserPrincipal;
@@ -32,6 +34,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -289,6 +292,78 @@ class UserControllerTest extends AbstractPageableControllerTest {
         assertThat(actual.getData()).isEqualTo(expected);
 
         then(userService).should().getUserManagementMetric();
+    }
+
+    @DisplayName("GET : /api/v1/users/{userId} : 회원 정보 정상 응답")
+    @Test
+    void test_getUserDetail() throws Exception {
+        String userId = "tester01";
+        UserDetailInfo expected = new UserDetailInfo(
+                userId,
+                "테스터",
+                "tester",
+                LocalDate.of(1996, 2, 20),
+                LocalDate.of(2026, 5, 5),
+                LocalDate.of(2026, 8, 26),
+                true,
+                "admin"
+        );
+
+        given(userService.getUserDetail(eq(userId))).willReturn(expected);
+
+        String response = mockMvc.perform(get("/api/v1/users/{userId}", userId)
+                        .with(user(TEST_USER)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, UserDetailInfo.class);
+        BaseResponse<UserDetailInfo> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK.name());
+        assertThat(actual.getData()).isEqualTo(expected);
+
+        then(userService).should().getUserDetail(eq(userId));
+    }
+
+    @DisplayName("GET : /api/v1/users/{userId} : 회원 정보를 찾지 못한 경우")
+    @Test
+    void test_getUserDetail_notFound() throws Exception {
+        String userId = "unknown";
+        String errorMessage = "회원 정보를 찾을 수 없습니다.";
+
+        given(userService.getUserDetail(eq(userId))).willThrow(new EntityNotFoundException(errorMessage));
+
+        String response = mockMvc.perform(get("/api/v1/users/{userId}", userId)
+                        .with(user(TEST_USER)))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        JavaType baseResponseType = objectMapper.getTypeFactory().constructParametricType(BaseResponse.class, String.class);
+        BaseResponse<String> actual = objectMapper.readValue(response, baseResponseType);
+
+        assertThat(actual.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND.name());
+        assertThat(actual.getData()).isEqualTo(errorMessage);
+
+        then(userService).should().getUserDetail(eq(userId));
+    }
+
+    @DisplayName("GET : /api/v1/users/{userId} : 회원 식별키가 올바르지 않은 경우")
+    @Test
+    void test_getUserDetail_invalidUserId() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{userId}", " ")
+                        .with(user(TEST_USER)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        then(userService).should(never()).getUserDetail(any());
     }
 
     private static Stream<Arguments> duplicateExceptionParams() {
