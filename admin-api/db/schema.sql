@@ -145,7 +145,7 @@ create table user_info
     password          varchar(300)        not null,
     activate          bool                not null default false,
     birth_ymd         date,
-    register_admin_id varchar(20)         not null references admin_info (id),
+    register_admin_id varchar(20) references admin_info (id),
     created_at        timestamp           not null default current_timestamp,
     modified_at       timestamp           not null default current_timestamp
 );
