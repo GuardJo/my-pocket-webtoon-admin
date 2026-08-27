@@ -172,14 +172,16 @@ export default function MemberManagementTable() {
                             pageSize={members.length} onPageChange={setCurrentPage}/>
 
                 {/* Member Detail Modal */}
-                <MemberDetailModal
-                    open={openMemberModal}
-                    memberId={selectedMemberId}
-                    onClose={() => {
-                        setOpenMemberModal(false);
-                        setSelectedMemberId(null);
-                    }}
-                />
+                {selectedMemberId && (
+                    <MemberDetailModal
+                        open={openMemberModal}
+                        memberId={selectedMemberId}
+                        onClose={() => {
+                            setOpenMemberModal(false);
+                            setSelectedMemberId(null);
+                        }}
+                    />
+                )}
             </div>
         </>
     )

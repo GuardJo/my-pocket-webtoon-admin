@@ -1,4 +1,4 @@
-import {BaseResponse, MemberInfo, Pageable, toBaseResponse} from "@/lib/models";
+import {BaseResponse, MemberDetailInfo, MemberInfo, Pageable, toBaseResponse} from "@/lib/models";
 import {MemberMetrics} from "./models";
 
 export const memberService = {
@@ -26,5 +26,15 @@ export const memberService = {
         });
 
         return toBaseResponse<MemberMetrics>(response);
+    },
+    getMemberDetail: async (memberId: string): Promise<BaseResponse<MemberDetailInfo>> => {
+        const response = await fetch(`/api/users/${memberId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return toBaseResponse<MemberDetailInfo>(response);
     }
 }

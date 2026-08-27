@@ -1,25 +1,31 @@
 import {useState} from "react";
-import {MemberDetailInfo} from "@/lib/models";
+import {BaseResponse, MemberDetailInfo} from "@/lib/models";
 import {X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
+import {useQuery} from "@tanstack/react-query";
+import {memberService} from "@/lib/member-service";
 
 export default function MemberDetailModal({open, memberId, onClose}: MemberDetailModalProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editDraft, setEditDraft] = useState<MemberDetailInfo | null>(null);
 
-    // TODO API 구현 예정
-    const selectedMember: MemberDetailInfo = {
-        id: memberId ?? 'N/A',
-        name: '이현우',
-        nickname: '이현우22',
-        signupDate: '2023-11-04',
-        lastUpdateDate: '2023-11-04',
-        birthday: null,
-        activate: true,
-        registerAdminId: 'admin'
-    }
+    const {data} = useQuery<BaseResponse<MemberDetailInfo>>({
+        queryKey: ['getMemberDetail', memberId],
+        queryFn: async () => {
+            const response = await memberService.getMemberDetail(memberId);
+
+            if (response.status !== 200) {
+                console.error('Error: ', response.status, ', cause: ', response.data ?? 'no data');
+                throw new Error('회원 정보를 불러오는데 실패하였습니다.');
+            }
+
+            return response;
+        }
+    });
+
+    const selectedMember: MemberDetailInfo | null = data ? data.data : null;
 
     const closeMemberModal = () => {
         setIsEditing(false);
@@ -45,7 +51,7 @@ export default function MemberDetailModal({open, memberId, onClose}: MemberDetai
 
     return (
         <>
-            {open && memberId !== null && (
+            {open && selectedMember !== null && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
                     onClick={closeMemberModal}
@@ -208,6 +214,6 @@ export default function MemberDetailModal({open, memberId, onClose}: MemberDetai
 
 interface MemberDetailModalProps {
     open: boolean;
-    memberId: string | null;
+    memberId: string;
     onClose: () => void;
 }
