@@ -83,6 +83,15 @@ export interface MemberInfo {
 }
 
 /*
+회원 상세 정보
+ */
+export interface MemberDetailInfo extends MemberInfo {
+    birthday: string | null,
+    lastUpdateDate: string,
+    registerAdminId: string | null
+}
+
+/*
 회원 매트릭 정보
 */
 export interface MemberMetrics {

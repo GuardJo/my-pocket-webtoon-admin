@@ -4,6 +4,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import Pagination from "@/components/pagination";
 import {useQuery} from "@tanstack/react-query";
 import {memberService} from "@/lib/member-service";
+import MemberDetailModal from "@/components/member-detail-modal";
 
 const filterTabs = [
     {key: 'all', label: 'All Users'},
@@ -17,6 +18,8 @@ export default function MemberManagementTable() {
     const itemsPerPage = 10;
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
     const [currentPage, setCurrentPage] = useState(0);
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+    const [openMemberModal, setOpenMemberModal] = useState(false);
 
     const {data} = useQuery<BaseResponse<Pageable<MemberInfo>>>({
         queryKey: ['getMembers', currentPage, itemsPerPage],
@@ -36,6 +39,11 @@ export default function MemberManagementTable() {
     const pageInfo = data?.data.page;
     const totalItems = pageInfo?.totalElements ?? 0;
     const totalPages = pageInfo?.totalPages ?? 0;
+
+    const onClickMember = (memberId: string) => {
+        setSelectedMemberId(memberId);
+        setOpenMemberModal(true);
+    }
 
     return (
         <>
@@ -96,6 +104,7 @@ export default function MemberManagementTable() {
                             <TableRow
                                 key={member.id}
                                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                                onClick={() => onClickMember(member.id)}
                             >
                                 <TableCell className="px-6 py-5 text-sm text-gray-500">
                                     #{member.id}
@@ -161,6 +170,18 @@ export default function MemberManagementTable() {
                 {/* Pagination */}
                 <Pagination totalPage={totalPages} currentPage={currentPage} totalElement={totalItems}
                             pageSize={members.length} onPageChange={setCurrentPage}/>
+
+                {/* Member Detail Modal */}
+                {selectedMemberId && (
+                    <MemberDetailModal
+                        open={openMemberModal}
+                        memberId={selectedMemberId}
+                        onClose={() => {
+                            setOpenMemberModal(false);
+                            setSelectedMemberId(null);
+                        }}
+                    />
+                )}
             </div>
         </>
     )

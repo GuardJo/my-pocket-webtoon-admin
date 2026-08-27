@@ -1,7 +1,7 @@
 import {Meta, StoryObj} from "@storybook/nextjs-vite";
 import MemberManagementTable from "@/components/member-management-table";
 import {http} from "msw";
-import {MemberInfo, Pageable, PageInfo} from "@/lib/models";
+import {MemberDetailInfo, MemberInfo, Pageable, PageInfo} from "@/lib/models";
 
 const meta = {
     title: 'components/member-management-table',
@@ -78,6 +78,26 @@ export const HasData: Story = {
                         'status': 200,
                         'statusCode': 'Ok',
                         'data': pageable
+                    });
+                }),
+                http.get('/api/users/:userId', ({params}) => {
+                    const {userId} = params
+                    const memberDetail: MemberDetailInfo = {
+                        id: String(userId) ?? 'N/A',
+                        name: '이현우',
+                        nickname: '이현우22',
+                        signupDate: '2023-11-04',
+                        lastUpdateDate: '2023-11-04',
+                        birthday: null,
+                        activate: true,
+                        registerAdminId: 'admin'
+                    }
+
+                    return Response.json({
+                        status: 200,
+                        statusCode: 'Ok',
+                        data: memberDetail
+                        ,
                     });
                 })
             ]
